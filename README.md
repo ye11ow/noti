@@ -25,5 +25,6 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests
 ### Supported GUI
 
 - [X] Bitbar
+- [ ] Native Mac app
 - [ ] VS Code
 - [ ] Terminal ([WTF](https://wtfutil.com/) maybe?)

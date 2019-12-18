@@ -10,13 +10,17 @@
 # <bitbar.dependencies>python</bitbar.dependencies>
 # <bitbar.abouturl>https://github.com/ye11ow/noti</bitbar.abouturl>
 
+import json
+from pathlib import PurePath
+from pathlib import Path
+from datetime import datetime
+
 import gitlab
 from dateutil import parser
 from dateutil.tz import tzlocal
-from datetime import datetime
 
 # Put your personal configuration here
-user_config = {
+DEFAULT_CONFIG = {
     # Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
     'token': '',
 
@@ -35,7 +39,7 @@ class Gitlab:
     def get_mrs(self):
         mrs = []
 
-        for pid in user_config['project_id']:
+        for pid in self._config['project_id']:
             project = self._gl.projects.get(pid)
             for list_mr in project.mergerequests.list(state='opened'):
                 mrs.append(MR(project, list_mr))
@@ -226,7 +230,16 @@ class BitbarPrinter:
 
 
 if __name__== "__main__":
-    gl = Gitlab(user_config)
+    config_path = PurePath(Path.home(), ".noticonfig.json")
+    user_config = {}
+    try:
+        with open(config_path, 'r') as f:
+            user_config = json.loads(f.read())
+    except:
+        pass
+    config = {**DEFAULT_CONFIG, **user_config}
+
+    gl = Gitlab(config)
     mrs = gl.get_mrs()
 
     bp = BitbarPrinter()
