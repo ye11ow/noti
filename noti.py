@@ -230,8 +230,12 @@ class BitbarPrinter:
 
 
 if __name__== "__main__":
-    config_path = PurePath(Path.home(), ".noticonfig.json")
+    config_path = Path(Path.home(), ".noticonfig.json")
     user_config = {}
+    if not config_path.exists():
+        with open(config_path, 'w') as f:
+            f.write(json.dumps(DEFAULT_CONFIG, indent=4))
+
     try:
         with open(config_path, 'r') as f:
             user_config = json.loads(f.read())
