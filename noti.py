@@ -149,6 +149,9 @@ class BitbarPrinter:
     def __init__(self):
         pass
 
+    def print_config(self):
+        print('Configure noti | bash="vi $HOME/.noticonfig.json"')
+
     def print_mr(self, mr):
         pipeline_color_map = {
             'success': 'green',
@@ -251,8 +254,11 @@ if __name__== "__main__":
         mrs = gl.get_mrs()
     except ConnectionError:
         print("failed to connect to gitlab")
+        print('---\n')
+        bp.print_config()
         exit(1)
 
     bp.print_title(mrs)
     for mr in mrs:
         bp.print_mr(mr)
+    bp.print_config()
