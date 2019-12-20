@@ -16,6 +16,7 @@ from pathlib import Path
 from datetime import datetime
 
 import gitlab
+from requests.exceptions import ConnectionError
 from dateutil import parser
 from dateutil.tz import tzlocal
 
@@ -244,9 +245,14 @@ if __name__== "__main__":
     config = {**DEFAULT_CONFIG, **user_config}
 
     gl = Gitlab(config)
-    mrs = gl.get_mrs()
-
     bp = BitbarPrinter()
+
+    try:
+        mrs = gl.get_mrs()
+    except ConnectionError:
+        print("failed to connect to gitlab")
+        exit(1)
+
     bp.print_title(mrs)
     for mr in mrs:
         bp.print_mr(mr)
