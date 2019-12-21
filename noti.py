@@ -16,39 +16,65 @@ from pathlib import Path
 from datetime import datetime
 
 import gitlab
+from github import Github as GH
+
 from requests.exceptions import ConnectionError
 from dateutil import parser
 from dateutil.tz import tzlocal
 
 # Put your personal configuration here
 DEFAULT_CONFIG = {
-    # Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
-    'token': '',
+    # Gitlab related configurations
+    'gitlab': {
+        # Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
+        'token': '',
 
-    # Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
-    'project_id': [],
+        # Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
+        'project_id': [],
 
-    # The host of the gitlab server. e.g. https://gitlab.example.com
-    'gitlab_host': '',
+        # The host of the gitlab server. e.g. https://gitlab.example.com
+        'host': '',
+    },
+
+    # Github related configurations
+    'github': {
+        'token': '',
+        'repo': ['']
+    }
 }
 
 class Gitlab:
     def __init__(self, config):
-        self._config = config
-        self._gl = gitlab.Gitlab(config['gitlab_host'], private_token=config['token'])
+        self._config = config.get('gitlab', {})
+        self._gl = gitlab.Gitlab(config.get('host'), private_token=config.get('token'))
 
     def get_mrs(self):
         mrs = []
 
-        for pid in self._config['project_id']:
+        for pid in self._config.get('project_id'):
             project = self._gl.projects.get(pid)
             for list_mr in project.mergerequests.list(state='opened'):
-                mrs.append(MR(project, list_mr))
+                mrs.append(GitlabMR(project, list_mr))
 
         return mrs
 
+class Github:
+    def __init__(self, config):
+        self._config = config.get('github', {})
+        self._gh = GH(config.get('token'))
 
-class MR:
+    def get_mrs(self):
+        mrs = []
+
+        for repo_name in self._config.get('repo'):
+            repo = self._gh.get_repo(repo_name)
+            pulls = repo.get_pulls(state='open', sort='created', base='master')
+            for pr in pulls:
+                mrs.append(pr)
+
+        return mrs
+
+class GitlabMR:
     def __init__(self, project, list_mr):
         self._project = project
         self._mr = self._project.mergerequests.get(list_mr.get_id())
