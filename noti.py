@@ -58,22 +58,6 @@ class Gitlab:
 
         return mrs
 
-class Github:
-    def __init__(self, config):
-        self._config = config.get('github', {})
-        self._gh = GH(config.get('token'))
-
-    def get_mrs(self):
-        mrs = []
-
-        for repo_name in self._config.get('repo'):
-            repo = self._gh.get_repo(repo_name)
-            pulls = repo.get_pulls(state='open', sort='created', base='master')
-            for pr in pulls:
-                mrs.append(pr)
-
-        return mrs
-
 class GitlabMR:
     def __init__(self, project, list_mr):
         self._project = project
@@ -170,6 +154,66 @@ class Review:
     @property
     def url(self):
         return f"{self._mr.url}#note_{self._review.get_id()}"
+
+class Github:
+    def __init__(self, config):
+        self._config = config.get('github', {})
+        self._gh = GH(config.get('token'))
+
+    def get_mrs(self):
+        mrs = []
+
+        for repo_name in self._config.get('repo'):
+            repo = self._gh.get_repo(repo_name)
+            pulls = repo.get_pulls(state='open', sort='created', base='master')
+            for pr in pulls:
+                mrs.append(GithubPR(pr))
+
+        return mrs
+
+class GithubPR:
+    def __init__(self, pr):
+        self._pr = pr
+
+    @property
+    def ci_failed(self):
+        return False
+
+    @property
+    def ci_status(self):
+        return 'success'
+
+    @property
+    def failed_pipeline_jobs(self):
+        return []
+
+    @property
+    def approved(self):
+        return self._pr.mergeable
+
+    @property
+    def url(self):
+        return self._pr.url
+
+    @property
+    def branch(self):
+        return ''
+
+    @property
+    def has_review(self):
+        return self._pr.comments > 0
+
+
+    @property
+    def reviews(self):
+        if not hasattr(self, '_reviews'):
+            comments = []
+            for comment in self._pr.get_comments():
+                comments += comment
+
+            self._reviews = comments
+
+        return self._reviews
 
 class BitbarPrinter:
     def __init__(self):
