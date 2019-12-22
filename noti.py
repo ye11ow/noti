@@ -118,7 +118,7 @@ class GitlabMR:
         if not hasattr(self, '_reviews'):
             reviews = self._mr.notes.list()
             reviews = list(filter(lambda x: note_filter(x), reviews))
-            self._reviews = list(map(lambda x: Review(self, x), reviews))
+            self._reviews = list(map(lambda x: GitlabReview(self, x), reviews))
 
         return self._reviews
 
@@ -134,7 +134,7 @@ class PipelineJob:
     def url(self):
         return self._job.attributes.get('web_url')
 
-class Review:
+class GitlabReview:
     def __init__(self, mr, review):
         self._mr = mr
         self._review = review
@@ -145,7 +145,7 @@ class Review:
 
     @property
     def created_at(self):
-        return self._review.attributes.get('created_at')
+        return parser.parse(self._review.attributes.get('created_at')).astimezone(tzlocal())
 
     @property
     def body(self):
@@ -158,7 +158,7 @@ class Review:
 class Github:
     def __init__(self, config):
         self._config = config.get('github', {})
-        self._gh = GH(config.get('token'))
+        self._gh = GH(self._config.get('token'))
 
     def get_mrs(self):
         mrs = []
@@ -205,14 +205,34 @@ class GithubPR:
 
     @property
     def reviews(self):
-        if not hasattr(self, '_reviews'):
+        if not hasattr(self, '_comments'):
             comments = []
             for comment in self._pr.get_comments():
-                comments.append(comment)
+                comments.append(GithubComment(comment))
 
-            self._reviews = comments
+            self._comments = comments
 
-        return self._reviews
+        return self._comments
+
+class GithubComment:
+    def __init__(self, comment):
+        self._comment = comment
+
+    @property
+    def author(self):
+        return self._comment.user.login
+
+    @property
+    def created_at(self):
+        return self._comment.created_at.astimezone(tzlocal())
+
+    @property
+    def body(self):
+        return self._comment.body
+
+    @property
+    def url(self):
+        return self._comment.html_url
 
 class BitbarPrinter:
     def __init__(self):
@@ -244,11 +264,9 @@ class BitbarPrinter:
                     sub_text += f"--{job.name} | color=red href={job.url}\n"
 
         if len(mr.reviews) > 0:
+            diff = datetime.now().astimezone(tzlocal()) - mr.reviews[0].created_at
+
             sub_text += '-----\n'
-
-            last = mr.reviews[0].created_at
-            diff = datetime.now().astimezone(tzlocal()) - parser.parse(last).astimezone(tzlocal())
-
             sub_text += f"--Discussions ({diff})\n"
 
             for review in mr.reviews:
@@ -262,9 +280,7 @@ class BitbarPrinter:
         else:
             title = f"{mr.branch} 💬{len(mr.reviews)} {title}"
 
-        title += '\n'
-
-        print(f"{title}\n\n{sub_text}")
+        print(f"{title}\n\n\n{sub_text}")
 
     def print_title(self, mrs):
         statistics = {
