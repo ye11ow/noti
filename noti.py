@@ -193,23 +193,22 @@ class GithubPR:
 
     @property
     def url(self):
-        return self._pr.url
+        return self._pr.html_url
 
     @property
     def branch(self):
-        return ''
+        return self._pr.head.ref
 
     @property
     def has_review(self):
         return self._pr.comments > 0
-
 
     @property
     def reviews(self):
         if not hasattr(self, '_reviews'):
             comments = []
             for comment in self._pr.get_comments():
-                comments += comment
+                comments.append(comment)
 
             self._reviews = comments
 
@@ -291,7 +290,6 @@ class BitbarPrinter:
                 statistics[mr.ci_status] += 1
 
         title = ''
-
         for key in statistics:
             if statistics[key] > 0:
                 title += pipeline_icon_map[key] + str(statistics[key])
