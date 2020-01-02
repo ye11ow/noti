@@ -11,16 +11,23 @@
 # <bitbar.abouturl>https://github.com/ye11ow/noti</bitbar.abouturl>
 
 import json
-from pathlib import PurePath
 from pathlib import Path
 from datetime import datetime
 
-import gitlab
-from github import Github as GH
-
-from requests.exceptions import ConnectionError
-from dateutil import parser
-from dateutil.tz import tzlocal
+try:
+    import gitlab
+    from github import Github as GH
+    from requests.exceptions import ConnectionError
+    from dateutil import parser
+    from dateutil.tz import tzlocal
+except:
+    print("Missing dependencies")
+    print("---")
+    print("You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html")
+    print("You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install")
+    print("You need to install dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation")
+    import sys
+    sys.exit(0)
 
 # Put your personal configuration here
 DEFAULT_CONFIG = {
@@ -239,6 +246,7 @@ class BitbarPrinter:
         pass
 
     def print_config(self):
+        print('---\n')
         print('Configure noti | bash="vi $HOME/.noticonfig.json"')
 
     def print_mr(self, mr):
@@ -271,7 +279,7 @@ class BitbarPrinter:
 
             for review in mr.reviews:
                 firstname = review.author.split(' ')[0]
-                short = review.body.replace('-', '').replace('\n', '')
+                short = review.body.replace('-', '').replace('\n', '').replace('\r', '')
                 short = short[:32]
                 sub_text += f"--{firstname}: {short} | href={review.url}\n"
 
@@ -316,17 +324,14 @@ class BitbarPrinter:
         print(title)
         print('---\n')
 
-
 if __name__== "__main__":
     config_path = Path(Path.home(), ".noticonfig.json")
     user_config = {}
     if not config_path.exists():
-        with open(config_path, 'w') as f:
-            f.write(json.dumps(DEFAULT_CONFIG, indent=4))
+        config_path.write_text(json.dumps(DEFAULT_CONFIG, indent=4))
 
     try:
-        with open(config_path, 'r') as f:
-            user_config = json.loads(f.read())
+        user_config = json.loads(config_path.read_text())
     except:
         pass
     config = {**DEFAULT_CONFIG, **user_config}
