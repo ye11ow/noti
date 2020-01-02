@@ -9,8 +9,8 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests
 1. Edit `noti.py`: make sure you point to the right Python interpreter path in shebang.
 
 1. Edit `$HOME/.noticonfig.json`: make sure you configure noti properly.
-    
-1. You may need to run `pip install python-dateutil` and `sudo pip install --upgrade python-gitlab` to install the dependencies.
+
+1. You may need to follow the instruction to install the dependencies if you have seen the `Missing dependencies` error.
 
 1. Rename the `noti.py` to `noti.{time}.py`. The `{time}` is the refresh rate. For instance, `noti.30s.py` will refresh the status every 30 seconds. For detailed instruction, you can refer to https://github.com/matryer/bitbar#configure-the-refresh-time.
 
@@ -21,7 +21,8 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests
 ### Supported VCS
 
 - [X] Gitlab + Gitlab pipeline
-- [ ] Github
+- [X] Github
+    - [ ] Travis CI
 
 ### Supported GUI
 
