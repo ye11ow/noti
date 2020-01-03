@@ -53,7 +53,8 @@ DEFAULT_CONFIG = {
 class Gitlab:
     def __init__(self, config):
         self._config = config.get('gitlab', {})
-        self._gl = gitlab.Gitlab(config.get('host'), private_token=config.get('token'))
+        # TODO: raise error if there is no gitlab object
+        self._gl = gitlab.Gitlab(self._config.get('host'), private_token=self._config.get('token'))
 
     def get_mrs(self):
         mrs = []
