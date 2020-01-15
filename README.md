@@ -1,4 +1,8 @@
 # Noti
+
+[![Build Status](https://travis-ci.org/ye11ow/noti.svg?branch=master)](https://travis-ci.org/ye11ow/noti)
+[![Coverage Status](https://coveralls.io/repos/github/ye11ow/noti/badge.svg?branch=master)](https://coveralls.io/github/ye11ow/noti?branch=master)
+
 Noti is a Mac OS X menu bar plugin to show the status of pull requests
 
 ## Installation
