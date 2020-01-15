@@ -25,7 +25,7 @@ except:
     print("---")
     print("You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html")
     print("You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install")
-    print("You need to install dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation")
+    print("You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation")
     import sys
     sys.exit(0)
 

@@ -5,4 +5,6 @@ python:
 install:
   - "pip install -r requirements.txt"
 script:
-  - python -m pytest tests/unit
+  - python -m pytest tests/unit --cov=. --cov-report html --cov-report term
+after_success:
+  - coveralls
