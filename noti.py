@@ -10,23 +10,18 @@
 # <bitbar.dependencies>python</bitbar.dependencies>
 # <bitbar.abouturl>https://github.com/ye11ow/noti</bitbar.abouturl>
 
+import sys
 import json
 from pathlib import Path
 from datetime import datetime
 
 try:
-    import gitlab
-    from github import Github as GH
-    from requests.exceptions import ConnectionError
     from dateutil import parser
     from dateutil.tz import tzlocal
 except:
     print("Missing dependencies")
     print("---")
-    print("You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html")
-    print("You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install")
     print("You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation")
-    import sys
     sys.exit(0)
 
 # Put your personal configuration here
@@ -52,8 +47,15 @@ DEFAULT_CONFIG = {
 
 class Gitlab:
     def __init__(self, config):
+        try:
+            import gitlab
+        except:
+            print("Missing dependencies")
+            print("---")
+            print("You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html")
+            sys.exit(0)
+
         self._config = config.get('gitlab', {})
-        # TODO: raise error if there is no gitlab object
         self._gl = gitlab.Gitlab(self._config.get('host'), private_token=self._config.get('token'))
 
     def get_mrs(self):
@@ -165,6 +167,14 @@ class GitlabReview:
 
 class Github:
     def __init__(self, config):
+        try:
+            from github import Github as GH
+        except:
+            print("Missing dependencies")
+            print("---")
+            print("You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install")
+            sys.exit(0)
+
         self._config = config.get('github', {})
         self._gh = GH(self._config.get('token'))
 
@@ -342,7 +352,7 @@ if __name__== "__main__":
 
     try:
         mrs = gl.get_mrs()
-    except ConnectionError:
+    except:
         print("failed to connect to gitlab")
         print('---\n')
         bp.print_config()
