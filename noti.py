@@ -15,15 +15,6 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-try:
-    from dateutil import parser
-    from dateutil.tz import tzlocal
-except:
-    print("Missing dependencies")
-    print("---")
-    print("You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation")
-    sys.exit(0)
-
 # Put your personal configuration here
 DEFAULT_CONFIG = {
     # Gitlab related configurations
@@ -50,10 +41,7 @@ class Gitlab:
         try:
             import gitlab
         except:
-            print("Missing dependencies")
-            print("---")
-            print("You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html")
-            sys.exit(0)
+            bp.print_error('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
 
         self._config = config.get('gitlab', {})
         self._gl = gitlab.Gitlab(self._config.get('host'), private_token=self._config.get('token'))
@@ -170,10 +158,7 @@ class Github:
         try:
             from github import Github as GH
         except:
-            print("Missing dependencies")
-            print("---")
-            print("You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install")
-            sys.exit(0)
+            bp.print_error('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
         self._config = config.get('github', {})
         self._gh = GH(self._config.get('token'))
@@ -259,6 +244,15 @@ class BitbarPrinter:
     def print_config(self):
         print('---\n')
         print('Configure noti | bash="vi $HOME/.noticonfig.json"')
+    
+    def print_error(self, title, extra):
+        print(title)
+        print('---\n')
+        if extra:
+            print(extra)
+            print('\n')
+        bp.print_config()
+        exit(1)
 
     def print_mr(self, mr):
         pipeline_color_map = {
@@ -335,29 +329,34 @@ class BitbarPrinter:
         print(title)
         print('---\n')
 
+bp = BitbarPrinter()
+
+try:
+    from dateutil import parser
+    from dateutil.tz import tzlocal
+except:
+    bp.print_error('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
+
 if __name__== "__main__":
     config_path = Path(Path.home(), ".noticonfig.json")
     user_config = {}
     if not config_path.exists():
         config_path.write_text(json.dumps(DEFAULT_CONFIG, indent=4))
 
-    try:
-        user_config = json.loads(config_path.read_text())
-    except:
-        pass
+    user_config = json.loads(config_path.read_text())
     config = {**DEFAULT_CONFIG, **user_config}
 
-    gl = Gitlab(config)
-    bp = BitbarPrinter()
-
+    vcs = None
+    if 'gitlab' in user_config:
+        vcs = Gitlab(config)
+    elif 'github' in user_config:
+        vcs = Github(config)
+    
     try:
-        mrs = gl.get_mrs()
+        mrs = vcs.get_mrs()
     except:
-        print("failed to connect to gitlab")
-        print('---\n')
-        bp.print_config()
-        exit(1)
-
+        bp.print_error("failed to connect to the server", None)
+        
     bp.print_title(mrs)
     for mr in mrs:
         bp.print_mr(mr)
