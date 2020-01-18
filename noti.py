@@ -52,14 +52,15 @@ class Gitlab:
         for pid in self._config.get('project_id'):
             project = self._gl.projects.get(pid)
             for list_mr in project.mergerequests.list(state='opened'):
-                mrs.append(GitlabMR(project, list_mr))
+                mr = project.mergerequests.get(list_mr.get_id())
+                mrs.append(GitlabMR(project, mr))
 
         return mrs
 
 class GitlabMR:
-    def __init__(self, project, list_mr):
+    def __init__(self, project, mr):
         self._project = project
-        self._mr = self._project.mergerequests.get(list_mr.get_id())
+        self._mr = mr
 
     @property
     def ci_failed(self):
