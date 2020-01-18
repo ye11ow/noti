@@ -12,6 +12,7 @@ class TestGitlabReview:
         review = GitlabReview({}, mock_review)
 
         assert review.author == 'myauthor'
+        mock_review.attributes.get.assert_called_with('author')
 
     def test_created_at(self):
         mock_review = MagicMock()
@@ -23,6 +24,7 @@ class TestGitlabReview:
         assert created_at.year == 2013
         assert created_at.month == 9
         assert created_at.day == 30
+        mock_review.attributes.get.assert_called_with('created_at')
 
     def test_body(self):
         mock_review = MagicMock()
@@ -30,6 +32,7 @@ class TestGitlabReview:
         review = GitlabReview({}, mock_review)
         
         assert review.body == 'mybody'
+        mock_review.attributes.get.assert_called_with('body')
 
     def test_url(self):
         mock_review = MagicMock()
