@@ -1,25 +1,25 @@
 from unittest.mock import MagicMock
+import pytest
 
 from noti import GitlabMR
 
 class TestGitlabMR:
 
-    def test_ci_failed(self):
-        mock_mr = MagicMock()
-        mock_mr.attributes.get.return_value = {
+    @pytest.fixture(autouse=True)
+    def mr(self):
+        return GitlabMR({}, MagicMock())
+
+    def test_ci_failed(self, mr):
+        mr._mr.attributes.get.return_value = {
             'status': 'failed'
         }
 
-        review = GitlabMR({}, mock_mr)
+        assert mr.ci_failed
+        mr._mr.attributes.get.assert_called_with('pipeline')
 
-        assert review.ci_failed
-        mock_mr.attributes.get.assert_called_with('pipeline')
+    def test_approved(self, mr):
+        mr._mr.approvals.get.return_value.attributes.get.return_value = True
 
-    def test_approved(self):
-        mock_mr = MagicMock()
-        mock_mr.approvals.get.return_value.attributes.get.return_value = True
-
-        review = GitlabMR({}, mock_mr)
-        assert review.approved
-        mock_mr.approvals.get.return_value.attributes.get.assert_called_with('approved')
+        assert mr.approved
+        mr._mr.approvals.get.return_value.attributes.get.assert_called_with('approved')
         

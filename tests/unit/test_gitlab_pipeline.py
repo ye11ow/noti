@@ -1,23 +1,22 @@
 from unittest.mock import MagicMock
+import pytest
 
 from noti import PipelineJob
 
 class TestGitlabPipeline:
 
-    def test_name(self):
-        mock_job = MagicMock()
-        mock_job.attributes.get.return_value = 'myjob'
+    @pytest.fixture(autouse=True)
+    def job(self):
+        return PipelineJob(MagicMock())
 
-        review = PipelineJob(mock_job)
+    def test_name(self, job):
+        job._job.attributes.get.return_value = 'myjob'
 
-        assert review.name == 'myjob'
-        mock_job.attributes.get.assert_called_with('name')
+        assert job.name == 'myjob'
+        job._job.attributes.get.assert_called_with('name')
 
-    def test_url(self):
-        mock_job = MagicMock()
-        mock_job.attributes.get.return_value = 'myurl'
+    def test_url(self, job):
+        job._job.attributes.get.return_value = 'myurl'
 
-        review = PipelineJob(mock_job)
-
-        assert review.url == 'myurl'
-        mock_job.attributes.get.assert_called_with('web_url')
+        assert job.url == 'myurl'
+        job._job.attributes.get.assert_called_with('web_url')
