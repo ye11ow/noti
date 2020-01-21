@@ -36,15 +36,26 @@ DEFAULT_CONFIG = {
     }
 }
 
+class NotiError(Exception):
+    def __init__(self, title, message):
+        self.title = title
+        self.message = message
+
 class Gitlab:
     def __init__(self, config):
         try:
             import gitlab
         except:
-            bp.print_error('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
+            raise NotiError('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
 
         self._config = config.get('gitlab', {})
-        self._gl = gitlab.Gitlab(self._config.get('host'), private_token=self._config.get('token'))
+
+        host = self._config.get('host', '')
+        token = self._config.get('token', '')
+        if len(host) + len(token) == 0:
+            raise NotiError('Wrong Gitlab configuration', 'Please make sure you have the right host and token')
+    
+        self._gl = gitlab.Gitlab(host, private_token=token)
 
     def get_mrs(self):
         mrs = []
@@ -159,10 +170,14 @@ class Github:
         try:
             from github import Github as GH
         except:
-            bp.print_error('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
+            raise NotiError('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
         self._config = config.get('github', {})
-        self._gh = GH(self._config.get('token'))
+        token = self._config.get('token', '')
+        if len(token) == 0:
+            raise NotiError('Wrong Github configuration', 'Please make sure you have the right token')
+
+        self._gh = GH(token)
 
     def get_mrs(self):
         mrs = []
@@ -348,11 +363,14 @@ if __name__== "__main__":
     config = {**DEFAULT_CONFIG, **user_config}
 
     vcs = None
-    if 'gitlab' in user_config:
-        vcs = Gitlab(config)
-    elif 'github' in user_config:
-        vcs = Github(config)
-    
+    try:
+        if 'gitlab' in user_config:
+            vcs = Gitlab(config)
+        elif 'github' in user_config:
+            vcs = Github(config)
+    except NotiError as err:
+        bp.print_error(err.title, err.message)
+        
     try:
         mrs = vcs.get_mrs()
     except:
