@@ -65,3 +65,6 @@ class TestGitlabMR:
         mr._mr.notes.list.return_value = notes
 
         assert len(mr.reviews) == 2
+
+    def test_reviews_fail(self, mr):
+        assert 1 == 2
