@@ -186,12 +186,13 @@ class Github:
             repo = self._gh.get_repo(repo_name)
             pulls = repo.get_pulls(state='open', sort='created', base='master')
             for pr in pulls:
-                mrs.append(GithubPR(pr))
+                mrs.append(GithubPR(repo, pr))
 
         return mrs
 
 class GithubPR:
-    def __init__(self, pr):
+    def __init__(self, repo, pr):
+        self._repo = repo
         self._pr = pr
 
     @property
@@ -200,7 +201,11 @@ class GithubPR:
 
     @property
     def ci_status(self):
-        return 'success'
+        if not hasattr(self, '_status'):
+            sha = self._pr.head.sha
+            self._status = self._repo.get_commit(sha).get_combined_status()
+        
+        return self._status.state
 
     @property
     def failed_pipeline_jobs(self):
