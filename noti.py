@@ -74,10 +74,6 @@ class GitlabMR:
         self._mr = mr
 
     @property
-    def ci_failed(self):
-        return self.ci_status == 'failed'
-
-    @property
     def ci_status(self):
         pipeline = self._mr.attributes.get('pipeline')
         if pipeline:
@@ -196,20 +192,26 @@ class GithubPR:
         self._pr = pr
 
     @property
-    def ci_failed(self):
-        return False
-
-    @property
     def ci_status(self):
         if not hasattr(self, '_status'):
             sha = self._pr.head.sha
             self._status = self._repo.get_commit(sha).get_combined_status()
         
-        return self._status.state
+        state = self._status.state
+        if state == 'pending':
+            return 'running'
+        elif state == 'failure':
+            return 'failed'
+        else:
+            return state
 
     @property
     def failed_pipeline_jobs(self):
-        return []
+        if not hasattr(self, '_failed_pipeline_jobs'):
+            statuses = list(filter(lambda x: x.state == 'failure', self._status.statuses))
+            self._failed_pipeline_jobs = list(map(lambda x: TravisBuild(x), statuses))
+
+        return self._failed_pipeline_jobs
 
     @property
     def approved(self):
@@ -237,6 +239,18 @@ class GithubPR:
             self._comments = comments
 
         return self._comments
+
+class TravisBuild:
+    def __init__(self, build):
+        self._build = build
+
+    @property
+    def name(self):
+        return self._build.description
+
+    @property
+    def url(self):
+        return self._build.target_url
 
 class GithubComment:
     def __init__(self, comment):
