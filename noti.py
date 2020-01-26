@@ -246,7 +246,7 @@ class TravisBuild:
 
     @property
     def name(self):
-        return self._build.description
+        return self._build.context
 
     @property
     def url(self):
@@ -262,8 +262,7 @@ class GithubComment:
 
     @property
     def created_at(self):
-        return self._comment.created_at.astimezone(tzlocal())
-
+        return self._comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal())
     @property
     def body(self):
         return self._comment.body
@@ -312,10 +311,8 @@ class BitbarPrinter:
                     sub_text += f"--{job.name} | color=red href={job.url}\n"
 
         if len(mr.reviews) > 0:
-            diff = datetime.now().astimezone(tzlocal()) - mr.reviews[0].created_at
-
             sub_text += '-----\n'
-            sub_text += f"--Discussions ({diff})\n"
+            sub_text += f"--Discussions ({self.time_diff(mr.reviews[0].created_at)})\n"
 
             for review in mr.reviews:
                 firstname = review.author.split(' ')[0]
@@ -364,11 +361,23 @@ class BitbarPrinter:
         print(title)
         print('---\n')
 
+    def time_diff(self, before):
+        diff = (datetime.now().astimezone(tzlocal()) - before).seconds
+
+        hours = int(diff/3600)
+        hours_text = ''
+        if hours > 0:
+            hours_text = f"{hours} hours "
+        minutes = int(diff%3600/60)
+
+        return f"{hours_text}{minutes} minutes ago"
+
 bp = BitbarPrinter()
 
 try:
     from dateutil import parser
     from dateutil.tz import tzlocal
+    from dateutil.tz import tzutc
 except:
     bp.print_error('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
 
