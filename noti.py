@@ -74,6 +74,10 @@ class GitlabMR:
         self._mr = mr
 
     @property
+    def title(self):
+        return self._mr.attributes.get('title')
+        
+    @property
     def ci_status(self):
         pipeline = self._mr.attributes.get('pipeline')
         if pipeline:
@@ -192,6 +196,10 @@ class GithubPR:
         self._pr = pr
 
     @property
+    def title(self):
+        return self._pr.title
+
+    @property
     def ci_status(self):
         if not hasattr(self, '_status'):
             sha = self._pr.head.sha
@@ -263,6 +271,7 @@ class GithubComment:
     @property
     def created_at(self):
         return self._comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal())
+
     @property
     def body(self):
         return self._comment.body
@@ -326,6 +335,7 @@ class BitbarPrinter:
             title = f"{mr.branch} 💬{len(mr.reviews)} {title}"
 
         print(f"{title}\n\n\n{sub_text}")
+        print(f"{mr.title} | alternate=true")
 
     def print_title(self, mrs):
         statistics = {
