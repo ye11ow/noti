@@ -31,8 +31,17 @@ DEFAULT_CONFIG = {
 
     # Github related configurations
     'github': {
+        # Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
         'token': '',
+
+        # The name of the repo, e.g. "ye11ow/noti"
         'repo': ['']
+    },
+
+    # Shared configurations
+    'global': {
+        # Max number of MRs that will be shown on the list
+        'mr_limit': 20
     }
 }
 
@@ -413,6 +422,9 @@ if __name__== "__main__":
         mrs = vcs.get_mrs()
     except:
         bp.print_error("failed to connect to the server", None)
+    
+    if len(mrs) > config.get('global').get('mr_limit'):
+        mrs = mrs[:config.get('global').get('mr_limit')]
         
     bp.print_title(mrs)
     for mr in mrs:
