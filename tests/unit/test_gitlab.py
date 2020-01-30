@@ -14,6 +14,9 @@ class TestGitlab:
                 "token": "fake",
                 "project_id": [1],
                 "host": "https://example.com"
+            },
+            "global": {
+                "mr_limit": 5
             }
         }
 
@@ -37,9 +40,12 @@ class TestGitlab:
         project = MagicMock()
         mock_gl.return_value.projects.get.return_value = project
         project.mergerequests.list.return_value = [MagicMock(), MagicMock(), MagicMock()]
+        project.attributes.get.return_value = 'test_repo'
 
         g = Gitlab(config)
         mrs = g.get_mrs()
 
-        assert len(mrs) == 3
-        project.mergerequests.list.assert_called_with(state='opened')
+        assert 'test_repo' in mrs
+        project.attributes.get.assert_called_with('name')
+        assert len(mrs['test_repo']) == 3
+        project.mergerequests.list.assert_called_with(state='opened', per_page=5)

@@ -41,7 +41,7 @@ DEFAULT_CONFIG = {
     # Shared configurations
     'global': {
         # Max number of MRs that will be shown on the list
-        'mr_limit': 20
+        'mr_limit': 5
     }
 }
 
@@ -58,6 +58,7 @@ class Gitlab:
             raise NotiError('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
 
         self._config = config.get('gitlab', {})
+        self._global_config = config.get('global', {})
 
         host = self._config.get('host', '')
         token = self._config.get('token', '')
@@ -67,13 +68,15 @@ class Gitlab:
         self._gl = gitlab.Gitlab(host, private_token=token)
 
     def get_mrs(self):
-        mrs = []
+        mrs = {}
 
         for pid in self._config.get('project_id'):
             project = self._gl.projects.get(pid)
-            for list_mr in project.mergerequests.list(state='opened'):
+            name = project.attributes.get('name')
+            mrs[name] = []
+            for list_mr in project.mergerequests.list(state='opened', per_page=self._global_config.get('mr_limit')):
                 mr = project.mergerequests.get(list_mr.get_id())
-                mrs.append(GitlabMR(project, mr))
+                mrs[name].append(GitlabMR(project, mr))
 
         return mrs
 
@@ -182,6 +185,7 @@ class Github:
             raise NotiError('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
         self._config = config.get('github', {})
+        self._global_config = config.get('global', {})
         token = self._config.get('token', '')
         if len(token) == 0:
             raise NotiError('Wrong Github configuration', 'Please make sure you have the right token')
@@ -189,13 +193,18 @@ class Github:
         self._gh = GH(token)
 
     def get_mrs(self):
-        mrs = []
+        mrs = {}
 
         for repo_name in self._config.get('repo'):
+            mrs[repo_name] = []
             repo = self._gh.get_repo(repo_name)
             pulls = repo.get_pulls(state='open', sort='created', base='master')
             for pr in pulls:
-                mrs.append(GithubPR(repo, pr))
+                mrs[repo_name].append(GithubPR(repo, pr))
+                
+                # Github SDK doesn't support per_page parameter
+                if len(mrs[repo_name]) >= self._global_config.get('mr_limit'):
+                    break
 
         return mrs
 
@@ -306,6 +315,12 @@ class BitbarPrinter:
         bp.print_config()
         exit(1)
 
+    def print_repo(self, repo, mrs):
+        if len(mrs) == 0:
+            return
+
+        print(repo)
+
     def print_mr(self, mr):
         pipeline_color_map = {
             'success': 'green',
@@ -360,22 +375,20 @@ class BitbarPrinter:
             'approved': '👍'
         }
 
-        for mr in mrs:
-            statistics['comments'] += len(mr.reviews)
+        for key, value in mrs.items():
+            for mr in value:
+                statistics['comments'] += len(mr.reviews)
 
-            if mr.approved:
-                statistics['approved'] += 1
+                if mr.approved:
+                    statistics['approved'] += 1
 
-            if mr.ci_status in statistics:
-                statistics[mr.ci_status] += 1
+                if mr.ci_status in statistics:
+                    statistics[mr.ci_status] += 1
 
         title = ''
         for key in statistics:
             if statistics[key] > 0:
                 title += pipeline_icon_map[key] + str(statistics[key])
-
-        if len(title) == 0:
-            title = f"{len(mrs)} MRs"
 
         print(title)
         print('---\n')
@@ -422,11 +435,10 @@ if __name__== "__main__":
         mrs = vcs.get_mrs()
     except:
         bp.print_error("failed to connect to the server", None)
-    
-    if len(mrs) > config.get('global').get('mr_limit'):
-        mrs = mrs[:config.get('global').get('mr_limit')]
         
     bp.print_title(mrs)
-    for mr in mrs:
-        bp.print_mr(mr)
+    for repo_name, repo_mrs in mrs.items():
+        bp.print_repo(repo_name, repo_mrs)
+        for mr in repo_mrs:
+            bp.print_mr(mr)
     bp.print_config()
