@@ -15,35 +15,55 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Put your personal configuration here
-DEFAULT_CONFIG = {
-    # Gitlab related configurations
-    'gitlab': {
-        # Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
-        'token': '',
 
-        # Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
-        'project_id': [],
+class NotiConfig:
 
-        # The host of the gitlab server. e.g. https://gitlab.example.com
-        'host': '',
-    },
+    DEFAULT_CONFIG = {
+        # Gitlab related configurations
+        'gitlab': {
+            # Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
+            'token': '',
 
-    # Github related configurations
-    'github': {
-        # Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
-        'token': '',
+            # Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
+            'project_id': [],
 
-        # The name of the repo, e.g. "ye11ow/noti"
-        'repo': ['']
-    },
+            # The host of the gitlab server. e.g. https://gitlab.example.com
+            'host': '',
+        },
 
-    # Shared configurations
-    'global': {
-        # Max number of MRs that will be shown on the list
-        'mr_limit': 5
+        # Github related configurations
+        'github': {
+            # Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
+            'token': '',
+
+            # The name of the repo, e.g. "ye11ow/noti"
+            'repo': ['']
+        },
+
+        # Shared configurations
+        'global': {
+            # Max number of MRs that will be shown on the list
+            'mr_limit': 5
+        }
     }
-}
+
+    conf_path = Path(Path.home(), ".noticonfig.json")
+
+    def __init__(self):
+        if not self.conf_path.exists():
+            self.conf_path.write_text(json.dumps(self.DEFAULT_CONFIG, indent=4))
+
+    def init_vcs(self):
+        user_config = json.loads(self.conf_path.read_text())
+        self.config = {**self.DEFAULT_CONFIG, **user_config}
+
+        try:
+            if 'gitlab' in user_config:
+                return Gitlab(self.config)
+            elif 'github' in user_config:
+                return Github(self.config)
+        except NotiError as err:
+            bp.print_error(err.title, err.message)
 
 class NotiError(Exception):
     def __init__(self, title, message):
@@ -414,23 +434,8 @@ except:
     bp.print_error('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
 
 if __name__== "__main__":
-    config_path = Path(Path.home(), ".noticonfig.json")
-    user_config = {}
-    if not config_path.exists():
-        config_path.write_text(json.dumps(DEFAULT_CONFIG, indent=4))
-
-    user_config = json.loads(config_path.read_text())
-    config = {**DEFAULT_CONFIG, **user_config}
-
-    vcs = None
-    try:
-        if 'gitlab' in user_config:
-            vcs = Gitlab(config)
-        elif 'github' in user_config:
-            vcs = Github(config)
-    except NotiError as err:
-        bp.print_error(err.title, err.message)
-        
+    conf = NotiConfig()
+    vcs = conf.init_vcs()
     try:
         mrs = vcs.get_mrs()
     except:
