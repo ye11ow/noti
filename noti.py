@@ -47,9 +47,11 @@ class NotiConfig:
         }
     }
 
-    conf_path = Path(Path.home(), ".noticonfig.json")
+    def __init__(self, path=None):
+        if not path:
+            path = Path(Path.home(), ".noticonfig.json")
+        self.conf_path = path
 
-    def __init__(self):
         if not self.conf_path.exists():
             self.conf_path.write_text(json.dumps(self.DEFAULT_CONFIG, indent=4))
 
