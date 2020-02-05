@@ -321,28 +321,39 @@ class GithubComment:
 
 class BitbarPrinter:
     def __init__(self):
+        self.title = ""
+        self.items = []
+        self.configs = ['Configure noti | bash="vi $HOME/.noticonfig.json"']
         pass
 
-    def print_config(self):
+    def print(self):
+        print(self.title)
+
         print('---\n')
-        print('Configure noti | bash="vi $HOME/.noticonfig.json"')
-    
-    def print_error(self, title, extra):
-        print(title)
-        print('---\n')
-        if extra:
-            print(extra)
+        for item in self.items:
+            print(item)
             print('\n')
-        bp.print_config()
+
+        print('---\n')
+        for config in self.configs:
+            print(config)
+
+    # print_error will override title and body with error messages.
+    def print_error(self, title, extra):
+        self.title = title
+        if extra:
+            self.items = [extra]
+
+        self.print()
         exit(1)
 
-    def print_repo(self, repo, mrs):
+    def generate_repo_name(self, repo, mrs):
         if len(mrs) == 0:
             return
 
-        print(repo)
+        self.items.append(repo)
 
-    def print_mr(self, mr):
+    def generate_mr(self, mr):
         pipeline_color_map = {
             'success': 'green',
             'failed': 'red',
@@ -379,10 +390,10 @@ class BitbarPrinter:
         else:
             title = f"{mr.branch} 💬{len(mr.reviews)} {title}"
 
-        print(f"{title}\n\n\n{sub_text}")
-        print(f"{mr.title} | alternate=true")
+        self.items.append(f"{title}\n\n\n{sub_text}")
+        self.items.append(f"{mr.title} | alternate=true")
 
-    def print_title(self, mrs):
+    def generate_title(self, mrs):
         statistics = {
             'approved': 0,
             'failed': 0,
@@ -411,8 +422,7 @@ class BitbarPrinter:
             if statistics[key] > 0:
                 title += pipeline_icon_map[key] + str(statistics[key])
 
-        print(title)
-        print('---\n')
+        self.title = title
 
     def time_diff(self, before):
         diff = (datetime.now().astimezone(tzlocal()) - before).seconds
@@ -445,9 +455,9 @@ if __name__== "__main__":
     except Exception as err:
         bp.print_error("failed to connect to the server", None)
 
-    bp.print_title(mrs)
+    bp.generate_title(mrs)
     for repo_name, repo_mrs in mrs.items():
-        bp.print_repo(repo_name, repo_mrs)
+        bp.generate_repo_name(repo_name, repo_mrs)
         for mr in repo_mrs:
-            bp.print_mr(mr)
-    bp.print_config()
+            bp.generate_mr(mr)
+    bp.print()
