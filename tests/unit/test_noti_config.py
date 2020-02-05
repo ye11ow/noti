@@ -1,8 +1,10 @@
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+import pytest
 
 from noti import NotiConfig
+from noti import NotiError
 
 class TestNotiConfig:
 
@@ -11,8 +13,7 @@ class TestNotiConfig:
         fp = tempfile.NamedTemporaryFile('w')
         fp.write('''
         {
-            "gitlab": {
-            }
+            "gitlab": {}
         }
         ''')
         fp.flush()
@@ -20,15 +21,14 @@ class TestNotiConfig:
         vcs = conf.init_vcs()
         fp.close()
 
-        assert vcs
+        assert vcs == gitlab.return_value 
 
     @patch('noti.Github')
     def test_init_vcs_github(self, github):
         fp = tempfile.NamedTemporaryFile('w')
         fp.write('''
         {
-            "github": {
-            }
+            "github": {}
         }
         ''')
         fp.flush()
@@ -36,6 +36,19 @@ class TestNotiConfig:
         vcs = conf.init_vcs()
         fp.close()
 
-        assert vcs
+        assert vcs == github.return_value 
 
+    def test_init_vcs_none(self):
+        fp = tempfile.NamedTemporaryFile('w')
+        fp.write('''
+        {
+            "random": {}
+        }
+        ''')
+        fp.flush()
+        conf = NotiConfig(Path(fp.name))
 
+        with pytest.raises(NotiError):
+            vcs = conf.init_vcs()
+
+        fp.close()

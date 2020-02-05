@@ -59,13 +59,12 @@ class NotiConfig:
         user_config = json.loads(self.conf_path.read_text())
         self.config = {**self.DEFAULT_CONFIG, **user_config}
 
-        try:
-            if 'gitlab' in user_config:
-                return Gitlab(self.config)
-            elif 'github' in user_config:
-                return Github(self.config)
-        except NotiError as err:
-            bp.print_error(err.title, err.message)
+        if 'gitlab' in user_config:
+            return Gitlab(self.config)
+        elif 'github' in user_config:
+            return Github(self.config)
+        else:
+            raise NotiError('Wrong configuration', 'You have to configure either gitlab or github')
 
 class NotiError(Exception):
     def __init__(self, title, message):
@@ -437,12 +436,15 @@ except:
 
 if __name__== "__main__":
     conf = NotiConfig()
-    vcs = conf.init_vcs()
+
     try:
+        vcs = conf.init_vcs()
         mrs = vcs.get_mrs()
-    except:
+    except NotiError as err:
+        bp.print_error(err.title, err.message)        
+    except Exception as err:
         bp.print_error("failed to connect to the server", None)
-        
+
     bp.print_title(mrs)
     for repo_name, repo_mrs in mrs.items():
         bp.print_repo(repo_name, repo_mrs)
