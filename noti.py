@@ -321,37 +321,43 @@ class GithubComment:
 
 class BitbarPrinter:
     def __init__(self):
-        self.title = ""
-        self.items = []
-        self.configs = ['Configure noti | bash="vi $HOME/.noticonfig.json"']
-        pass
+        self._title = ""
+        self._items = []
+        self._configs = ['Configure noti | bash="vi $HOME/.noticonfig.json"']
+
+    def title(self, title):
+        self._title = title    
+    
+    def add(self, item):
+        self._items.append(item)
+
+    def clear(self):
+        self.title('')
+        self._items = []
 
     def print(self):
-        print(self.title)
+        print(self._title)
 
-        print('---\n')
-        for item in self.items:
-            print(item)
-            print('\n')
-
-        print('---\n')
-        for config in self.configs:
-            print(config)
+        if len(self._items) > 0:
+            print('---')
+            for item in self._items:
+                print(item)
+            
+        if len(self._configs) > 0:
+            print('---')
+            for config in self._configs:
+                print(config)
 
     # print_error will override title and body with error messages.
     def print_error(self, title, extra):
-        self.title = title
+        self.clear()
+
+        self.title(title)
         if extra:
-            self.items = [extra]
+            self.add(extra)
 
         self.print()
         exit(1)
-
-    def generate_repo_name(self, repo, mrs):
-        if len(mrs) == 0:
-            return
-
-        self.items.append(repo)
 
     def generate_mr(self, mr):
         pipeline_color_map = {
@@ -390,8 +396,8 @@ class BitbarPrinter:
         else:
             title = f"{mr.branch} 💬{len(mr.reviews)} {title}"
 
-        self.items.append(f"{title}\n\n\n{sub_text}")
-        self.items.append(f"{mr.title} | alternate=true")
+        self.add(f"{title}\n\n\n{sub_text}")
+        self.add(f"{mr.title} | alternate=true")
 
     def generate_title(self, mrs):
         statistics = {
@@ -422,7 +428,7 @@ class BitbarPrinter:
             if statistics[key] > 0:
                 title += pipeline_icon_map[key] + str(statistics[key])
 
-        self.title = title
+        self.title(title)
 
     def time_diff(self, before):
         diff = (datetime.now().astimezone(tzlocal()) - before).seconds
@@ -457,7 +463,11 @@ if __name__== "__main__":
 
     bp.generate_title(mrs)
     for repo_name, repo_mrs in mrs.items():
-        bp.generate_repo_name(repo_name, repo_mrs)
+        if len(repo_mrs) == 0:
+            continue
+
+        bp.add(repo_name)
         for mr in repo_mrs:
             bp.generate_mr(mr)
+
     bp.print()
