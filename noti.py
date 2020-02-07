@@ -428,6 +428,9 @@ class BitbarPrinter:
             if statistics[key] > 0:
                 title += pipeline_icon_map[key] + str(statistics[key])
 
+        if len(title) == 0:
+            title = '😃'
+
         self.title(title)
 
     def time_diff(self, before):

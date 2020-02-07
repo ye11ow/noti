@@ -3,6 +3,7 @@ from datetime import datetime
 from datetime import timedelta
 from io import StringIO
 from unittest.mock import patch
+from unittest.mock import MagicMock
 
 import pytest
 from dateutil.tz import tzlocal
@@ -17,6 +18,17 @@ def proxy_print(bp):
     sys.stdout = saved_stdout
 
     return out.getvalue()
+
+def create_mr(reviews, approved, status):
+    mr = MagicMock()
+    mr.reviews = []
+    for i in range(reviews):
+        mr.reviews.append('x')
+
+    mr.approved = approved
+    mr.ci_status = status
+
+    return mr
 
 class TestBitbarPrinter:
 
@@ -60,3 +72,20 @@ class TestBitbarPrinter:
 
         with pytest.raises(SystemExit):
             b.print_error('hello', 'world')
+
+    def test_generate_title_no_mr(self):
+        b = BitbarPrinter()
+
+        b.generate_title({})
+
+        assert b._title == '😃'
+
+    def test_generate_title(self):
+        b = BitbarPrinter()
+
+        mrs = {}
+        mrs['test'] = [create_mr(3,True,'failed'), create_mr(3,True,'running'), create_mr(0,False,'')]
+
+        b.generate_title(mrs)
+
+        assert b._title == '👍2🙃1🏃1💬6'
