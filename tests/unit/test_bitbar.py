@@ -30,6 +30,24 @@ def create_mr(reviews, approved, status):
 
     return mr
 
+def create_mr_details(approved, url, status, branch, title, reviews):
+    mr = MagicMock()
+    mr.approved = approved
+    mr.url = url
+    mr.ci_status = status
+    mr.branch = branch
+    mr.title = title
+    mr.reviews = reviews
+
+    return mr
+
+def create_review(author, body):
+    review = MagicMock()
+    review.author = author
+    review.body = body
+
+    return review
+
 class TestBitbarPrinter:
 
     def test_time_diff(self):
@@ -83,9 +101,39 @@ class TestBitbarPrinter:
     def test_generate_title(self):
         b = BitbarPrinter()
 
-        mrs = {}
-        mrs['test'] = [create_mr(3,True,'failed'), create_mr(3,True,'running'), create_mr(0,False,'')]
+        mrs = {}    
+        mrs['test'] = [
+            create_mr(3,True,'failed'),  
+            create_mr(3,True,'running'), 
+            create_mr(0,False,''),
+            create_mr(4,False,'RANDOMSTRING')
+        ]
 
         b.generate_title(mrs)
 
-        assert b._title == '👍2🙃1🏃1💬6'
+        assert b._title == '👍2🙃1🏃1💬10'
+
+    def test_generate_mr(self):
+        b = BitbarPrinter()
+
+        mr = create_mr_details(True, 'myurl', 'success', 'mybranch', 'mytitle', [])
+
+        b.generate_mr(mr)
+
+        assert b._items[0] == 'mybranch  👍 | href=myurl color=green\n\n\n'
+        assert b._items[1] == 'mytitle | alternate=true'
+
+    def test_generate_mr_with_reviews(self):
+        b = BitbarPrinter()
+
+        reviews = [
+            create_review('author1', 'body1')
+        ]
+
+        mr = create_mr_details(False, 'myurl', 'success', 'mybranch', 'mytitle', reviews)
+
+        b.generate_mr(mr)
+
+        # TODO: improve the assertion here
+        assert b._items[0].startswith('mybranch 💬1')
+        assert b._items[1] == 'mytitle | alternate=true'
