@@ -17,6 +17,23 @@ class TestGitlabMR:
     def mr(self):
         return GitlabMR(MagicMock(), MagicMock())
 
+    def test_title(self, mr):
+        mr._mr.attributes.get.return_value = 'mytitle'
+
+        assert mr.title == 'mytitle'
+        mr._mr.attributes.get.assert_called_with('title')
+
+    def test_ci_status(self, mr):
+        pipeline = MagicMock()
+        mr._mr.attributes.get.return_value = pipeline
+
+        pipeline.get.return_value = 'mystatus'
+
+        assert mr.ci_status == 'mystatus'
+        mr._mr.attributes.get.assert_called_with('pipeline')
+        pipeline.get.assert_called_with('status', None)
+    
+
     def test_failed_pipeline_jobs(self, mr):
         mr._mr.attributes.get.return_value = {
             'id': 123

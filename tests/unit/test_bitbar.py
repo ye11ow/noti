@@ -30,7 +30,7 @@ def create_mr(reviews, approved, status):
 
     return mr
 
-def create_mr_details(approved, url, status, branch, title, reviews):
+def create_mr_details(approved, url, status, branch, title, reviews, failed_jobs):
     mr = MagicMock()
     mr.approved = approved
     mr.url = url
@@ -38,6 +38,7 @@ def create_mr_details(approved, url, status, branch, title, reviews):
     mr.branch = branch
     mr.title = title
     mr.reviews = reviews
+    mr.failed_pipeline_jobs = failed_jobs
 
     return mr
 
@@ -48,59 +49,60 @@ def create_review(author, body):
 
     return review
 
+def create_failed_job(name, url):
+    job = MagicMock()
+    job.name = name
+    job.url = url
+
+    return job
+
 class TestBitbarPrinter:
 
-    def test_time_diff(self):
-        b = BitbarPrinter()
+    @pytest.fixture(autouse=True)
+    def bp(self):
+        return BitbarPrinter()
+
+    def test_time_diff(self, bp):
         before = datetime.now().astimezone(tzlocal()) - timedelta(minutes=30)
-        assert b.time_diff(before) == "30 minutes ago"
+        assert bp.time_diff(before) == "30 minutes ago"
 
         before = datetime.now().astimezone(tzlocal()) - timedelta(minutes=130)
-        assert b.time_diff(before) == "2 hours 10 minutes ago"
+        assert bp.time_diff(before) == "2 hours 10 minutes ago"
 
-    def test_print_title_only(self):
-        b = BitbarPrinter()
-        b.title('MYTITLE')
-        b._configs = []
+    def test_print_title_only(self, bp):
+        bp.title('MYTITLE')
+        bp._configs = []
 
-        out = proxy_print(b)
+        out = proxy_print(bp)
 
         assert out == 'MYTITLE\n'
         
-    def test_print_no_item(self):
-        b = BitbarPrinter()
-        b.title('MYTITLE')
+    def test_print_no_item(self, bp):
+        bp.title('MYTITLE')
 
-        out = proxy_print(b)
+        out = proxy_print(bp)
 
         assert out == 'MYTITLE\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json"\n'
         
-    def test_print_with_items(self):
-        b = BitbarPrinter()
-        b.title('MYTITLE')
-        b.add('123')
-        b.add('456')
+    def test_print_with_items(self, bp):
+        bp.title('MYTITLE')
+        bp.add('123')
+        bp.add('456')
 
-        out = proxy_print(b)
+        out = proxy_print(bp)
 
         assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json"\n'
         
-    def test_print_error(self):
-        b = BitbarPrinter()
-
+    def test_print_error(self, bp):
         with pytest.raises(SystemExit):
-            b.print_error('hello', 'world')
+            bp.print_error('hello', 'world')
 
-    def test_generate_title_no_mr(self):
-        b = BitbarPrinter()
+    def test_generate_title_no_mr(self, bp):
+        bp.generate_title({})
 
-        b.generate_title({})
+        assert bp._title == '😃'
 
-        assert b._title == '😃'
-
-    def test_generate_title(self):
-        b = BitbarPrinter()
-
+    def test_generate_title(self, bp):
         mrs = {}    
         mrs['test'] = [
             create_mr(3,True,'failed'),  
@@ -109,31 +111,31 @@ class TestBitbarPrinter:
             create_mr(4,False,'RANDOMSTRING')
         ]
 
-        b.generate_title(mrs)
+        bp.generate_title(mrs)
 
-        assert b._title == '👍2🙃1🏃1💬10'
+        assert bp._title == '👍2🙃1🏃1💬10'
 
-    def test_generate_mr(self):
-        b = BitbarPrinter()
+    def test_generate_mr(self, bp):
+        mr = create_mr_details(True, 'myurl', 'success', 'mybranch', 'mytitle', [], [])
 
-        mr = create_mr_details(True, 'myurl', 'success', 'mybranch', 'mytitle', [])
+        bp.generate_mr(mr)
 
-        b.generate_mr(mr)
+        assert bp._items[0] == 'mybranch  👍 | href=myurl color=green\n\n\n'
+        assert bp._items[1] == 'mytitle | alternate=true'
 
-        assert b._items[0] == 'mybranch  👍 | href=myurl color=green\n\n\n'
-        assert b._items[1] == 'mytitle | alternate=true'
-
-    def test_generate_mr_with_reviews(self):
-        b = BitbarPrinter()
-
+    def test_generate_mr_with_reviews_and_failed_job(self, bp):
         reviews = [
             create_review('author1', 'body1')
         ]
 
-        mr = create_mr_details(False, 'myurl', 'success', 'mybranch', 'mytitle', reviews)
+        failed_jobs = [
+            create_failed_job('name1', 'url1')
+        ]
 
-        b.generate_mr(mr)
+        mr = create_mr_details(False, 'myurl', 'failed', 'mybranch', 'mytitle', reviews, failed_jobs)
 
-        # TODO: improve the assertion here
-        assert b._items[0].startswith('mybranch 💬1')
-        assert b._items[1] == 'mytitle | alternate=true'
+        bp.generate_mr(mr)
+
+        # TODO: improve the assertion here to cover reviews output
+        assert bp._items[0].startswith('mybranch 💬1  | href=myurl color=red\n\n\n--Failed jobs\n--name1 | color=red href=url1\n')
+        assert bp._items[1] == 'mytitle | alternate=true'
