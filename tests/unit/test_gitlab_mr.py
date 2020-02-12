@@ -8,8 +8,17 @@ class DummyNote:
         self.attributes = {
             'system': system,
             'resolvable': resolvable,
-            'resolved': resolved
+            'resolved': resolved,
+            'author': {
+                'name': 'name'
+            },
+            'created_at': "2019",
+            'body': 'body'
         }
+        self._id = '123'
+
+    def get_id(self):
+        return self._id
 
 class TestGitlabMR:
 

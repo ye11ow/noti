@@ -15,6 +15,22 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+class Review():
+    @property
+    def author(self):
+        return self._author
+
+    @property
+    def created_at(self):
+        return self._created_at
+
+    @property
+    def body(self):
+        return self._body
+
+    @property
+    def url(self):
+        return self._url
 
 class NotiConfig:
 
@@ -177,26 +193,12 @@ class PipelineJob:
     def url(self):
         return self._job.attributes.get('web_url')
 
-class GitlabReview:
+class GitlabReview(Review):
     def __init__(self, mr, review):
-        self._mr = mr
-        self._review = review
-
-    @property
-    def author(self):
-        return self._review.attributes.get('author')['name']
-
-    @property
-    def created_at(self):
-        return parser.parse(self._review.attributes.get('created_at')).astimezone(tzlocal())
-
-    @property
-    def body(self):
-        return self._review.attributes.get('body')
-
-    @property
-    def url(self):
-        return f"{self._mr.url}#note_{self._review.get_id()}"
+        self._author = review.attributes.get('author')['name']
+        self._created_at = parser.parse(review.attributes.get('created_at')).astimezone(tzlocal())
+        self._body = review.attributes.get('body')
+        self._url = f"{mr.url}#note_{review.get_id()}"
 
 class Github:
     def __init__(self, config):
@@ -299,25 +301,12 @@ class TravisBuild:
     def url(self):
         return self._build.target_url
 
-class GithubComment:
+class GithubComment(Review):
     def __init__(self, comment):
-        self._comment = comment
-
-    @property
-    def author(self):
-        return self._comment.user.login
-
-    @property
-    def created_at(self):
-        return self._comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal())
-
-    @property
-    def body(self):
-        return self._comment.body
-
-    @property
-    def url(self):
-        return self._comment.html_url
+        self._author = comment.user.login
+        self._created_at = comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal())
+        self._body = comment.body
+        self._url = comment.html_url
 
 class BitbarPrinter:
     def __init__(self):
