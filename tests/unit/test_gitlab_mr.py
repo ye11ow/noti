@@ -2,27 +2,11 @@ from unittest.mock import MagicMock
 import pytest
 
 from noti import GitlabMR
-
-class DummyNote:
-    def __init__(self, system, resolvable, resolved):
-        self.attributes = {
-            'system': system,
-            'resolvable': resolvable,
-            'resolved': resolved,
-            'author': {
-                'name': 'name'
-            },
-            'created_at': "2019",
-            'body': 'body'
-        }
-        self._id = '123'
-
-    def get_id(self):
-        return self._id
+from fixtures import gitlab as mock
 
 class TestGitlabMR:
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def mr(self):
         return GitlabMR(MagicMock(), MagicMock())
 
@@ -78,7 +62,12 @@ class TestGitlabMR:
         mr._mr.attributes.get.assert_called_with('user_notes_count', -1)
             
     def test_reviews(self, mr):
-        notes = [DummyNote(True, False, False), DummyNote(False, True, True), DummyNote(False, False, False), DummyNote(False, True, False)]
+        notes = [
+            mock.DummyReview(system=True, resolvable=False, resolved=False), 
+            mock.DummyReview(system=False, resolvable=True, resolved=True), 
+            mock.DummyReview(system=False, resolvable=False, resolved=False), 
+            mock.DummyReview(system=False, resolvable=True, resolved=False)
+        ]
         mr._mr.notes.list.return_value = notes
 
         assert len(mr.reviews) == 2
