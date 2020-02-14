@@ -8,7 +8,7 @@ class TestGitlabReview:
 
     @pytest.fixture
     def review(self):
-        return GitlabReview(mock.DummyMR(), mock.DummyReview())
+        return GitlabReview(MagicMock(), mock.DummyReview())
 
     def test_author(self, review):
         assert review.author == '_author_'
@@ -24,4 +24,5 @@ class TestGitlabReview:
         assert review.body == '_body_'
 
     def test_url(self, review):
+        review._mr.url = '_url_'
         assert review.url == '_url_#note__id_'

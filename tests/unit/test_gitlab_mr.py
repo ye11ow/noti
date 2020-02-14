@@ -7,67 +7,43 @@ from fixtures import gitlab as mock
 class TestGitlabMR:
 
     @pytest.fixture
-    def mr(self):
-        return GitlabMR(MagicMock(), MagicMock())
+    def default_mr(self):
+        return GitlabMR(MagicMock(), mock.DummyMR())
 
-    def test_title(self, mr):
-        mr._mr.attributes.get.return_value = 'mytitle'
+    def test_title(self, default_mr):
+        assert default_mr.title == '_title_'
 
-        assert mr.title == 'mytitle'
-        mr._mr.attributes.get.assert_called_with('title')
+    def test_ci_status(self, default_mr):
+        assert default_mr.ci_status == 'success'
 
-    def test_ci_status(self, mr):
-        pipeline = MagicMock()
-        mr._mr.attributes.get.return_value = pipeline
-
-        pipeline.get.return_value = 'mystatus'
-
-        assert mr.ci_status == 'mystatus'
-        mr._mr.attributes.get.assert_called_with('pipeline')
-        pipeline.get.assert_called_with('status', None)
-    
-
-    def test_failed_pipeline_jobs(self, mr):
-        mr._mr.attributes.get.return_value = {
-            'id': 123
-        }
-        mr._project.pipelines.get.return_value.jobs.list.return_value = [1,2,3,4,5]
+    def test_failed_pipeline_jobs(self):
+        mock_project = MagicMock()
+        mock_project.pipelines.get.return_value.jobs.list.return_value = [1,2,3,4,5]
+        mr = GitlabMR(mock_project, mock.DummyMR())
         
         assert len(mr.failed_pipeline_jobs) == 5
-        mr._mr.attributes.get.assert_called_with('pipeline')
-        mr._project.pipelines.get.return_value.jobs.list.assert_called_with(scope='failed')
+        mock_project.pipelines.get.return_value.jobs.list.assert_called_with(scope='failed')
 
-    def test_approved(self, mr):
-        mr._mr.approvals.get.return_value.attributes.get.return_value = True
-
-        assert mr.approved
-        mr._mr.approvals.get.return_value.attributes.get.assert_called_with('approved')
+    def test_approved(self, default_mr):
+        assert default_mr.approved
         
-    def test_url(self, mr):
-        mr._mr.attributes.get.return_value = 'myurl'
-
-        assert mr.url == 'myurl'
-        mr._mr.attributes.get.assert_called_with('web_url')
+    def test_url(self, default_mr):
+        assert default_mr.url == '_url_'
     
-    def test_branch(self, mr):
-        mr._mr.attributes.get.return_value = 'mybranch'
+    def test_branch(self, default_mr):
+        assert default_mr.branch == '_branch_'
 
-        assert mr.branch == 'mybranch'
-        mr._mr.attributes.get.assert_called_with('source_branch')
-
-    def test_has_review(self, mr):
-        mr._mr.attributes.get.return_value = 5
-
-        assert mr.has_review
-        mr._mr.attributes.get.assert_called_with('user_notes_count', -1)
+    def test_has_review(self, default_mr):
+        assert default_mr.has_review
             
-    def test_reviews(self, mr):
+    def test_reviews(self):
         notes = [
             mock.DummyReview(system=True, resolvable=False, resolved=False), 
             mock.DummyReview(system=False, resolvable=True, resolved=True), 
             mock.DummyReview(system=False, resolvable=False, resolved=False), 
             mock.DummyReview(system=False, resolvable=True, resolved=False)
         ]
-        mr._mr.notes.list.return_value = notes
+
+        mr = GitlabMR(MagicMock(), mock.DummyMR(reviews=notes))
 
         assert len(mr.reviews) == 2
