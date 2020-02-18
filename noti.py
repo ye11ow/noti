@@ -10,34 +10,34 @@
 # <bitbar.dependencies>python</bitbar.dependencies>
 # <bitbar.abouturl>https://github.com/ye11ow/noti</bitbar.abouturl>
 
-from abc import ABC
-from abc import abstractmethod
 import sys
 import json
 from pathlib import Path
 from datetime import datetime
 
-class Review(ABC):
+class Review:
+
+    def __init__(self, author, created_at, body, url):
+        self._author = author
+        self._created_at = created_at
+        self._body = body
+        self._url = url
 
     @property
-    @abstractmethod
     def author(self):
-        pass
+        return self._author
 
     @property
-    @abstractmethod
     def created_at(self):
-        pass
+        return self._created_at
 
     @property
-    @abstractmethod
     def body(self):
-        pass
+        return self._body
 
     @property
-    @abstractmethod
     def url(self):
-        pass
+        return self._url
 
 class NotiConfig:
 
@@ -203,24 +203,12 @@ class PipelineJob:
 class GitlabReview(Review):
 
     def __init__(self, mr, review):
-        self._mr = mr
-        self._review = review
-
-    @property
-    def author(self):
-        return self._review.attributes.get('author')['name']
-    
-    @property
-    def created_at(self):
-        return parser.parse(self._review.attributes.get('created_at')).astimezone(tzlocal())
-    
-    @property
-    def body(self):
-        return self._review.attributes.get('body')
-    
-    @property
-    def url(self):
-        return f"{self._mr.url}#note_{self._review.get_id()}"
+        super().__init__(
+            author=review.attributes.get('author')['name'],
+            created_at=parser.parse(review.attributes.get('created_at')).astimezone(tzlocal()),
+            body=review.attributes.get('body'),
+            url=f"{mr.url}#note_{review.get_id()}"
+        )
 
 class Github:
     def __init__(self, config):
@@ -326,23 +314,12 @@ class TravisBuild:
 class GithubComment(Review):
     
     def __init__(self, comment):
-        self._comment = comment
-    
-    @property
-    def author(self):
-        return self._comment.user.login
-
-    @property
-    def created_at(self):
-        return self._comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal())
-    
-    @property
-    def body(self):
-        return self._comment.body
-
-    @property
-    def url(self):
-        return self._comment.html_url
+        super().__init__(
+            author=comment.user.login,
+            created_at=comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal()),
+            body=comment.body,
+            url=comment.html_url
+        )\
 
 class BitbarPrinter:
     def __init__(self):
