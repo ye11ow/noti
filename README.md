@@ -51,6 +51,7 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests. It is di
 
 - [X] Gitlab + Gitlab pipeline
 - [X] Github + Travis CI
+- [ ] Bitbucket + Bitbucket pipeline
 
 ### Supported GUI
 
