@@ -20,7 +20,7 @@ class DummyReview:
 
 # mock Gitlab MR response
 class DummyMR:
-    def __init__(self, title='_title_', status='success', pipeline_id='_pid_', url='_url_', branch='_branch_', review_count=3, reviews=[], approved=True):
+    def __init__(self, title='_title_', status='success', pipeline_id='_pid_', url='_url_', branch='_branch_', reviews=[], approved=True):
         self.attributes = {
             'title': title,
             'pipeline': {
@@ -28,8 +28,7 @@ class DummyMR:
                 'id': pipeline_id
             },
             'web_url': url,
-            'source_branch': branch,
-            'user_notes_count': review_count,
+            'source_branch': branch
         }
         self.notes = MagicMock()
         self.notes.list.return_value = reviews

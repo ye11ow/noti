@@ -39,6 +39,31 @@ class Review:
     def url(self):
         return self._url
 
+class MR:
+
+    def __init__(self, title, url, branch, ci_status=None):
+        self._title = title
+        self._ci_status = ci_status
+        self._url = url
+        self._branch = branch
+        pass
+
+    @property
+    def title(self):
+        return self._title
+    
+    @property
+    def ci_status(self):
+        return self._ci_status
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def branch(self):
+        return self._branch
+
 class NotiConfig:
 
     DEFAULT_CONFIG = {
@@ -124,20 +149,19 @@ class Gitlab:
 
         return mrs
 
-class GitlabMR:
+class GitlabMR(MR):
     def __init__(self, project, mr):
         self._project = project
         self._mr = mr
 
-    @property
-    def title(self):
-        return self._mr.attributes.get('title')
-        
-    @property
-    def ci_status(self):
-        pipeline = self._mr.attributes.get('pipeline')
-        if pipeline:
-            return pipeline.get('status', None)
+        pipeline = mr.attributes.get('pipeline')
+        ci_status = pipeline.get('status', None) if pipeline else None
+        super().__init__(
+            title=mr.attributes.get('title'),
+            ci_status=ci_status,
+            url=mr.attributes.get('web_url'),
+            branch=mr.attributes.get('source_branch')
+        )
 
     @property
     def failed_pipeline_jobs(self):
@@ -155,18 +179,6 @@ class GitlabMR:
             self._approved = self._mr.approvals.get().attributes.get('approved')
 
         return self._approved
-
-    @property
-    def url(self):
-        return self._mr.attributes.get('web_url')
-
-    @property
-    def branch(self):
-        return self._mr.attributes.get('source_branch')
-
-    @property
-    def has_review(self):
-        return self._mr.attributes.get('user_notes_count', -1) > 0
 
     # return unresolved, non-system notes only
     @property
@@ -241,14 +253,16 @@ class Github:
 
         return mrs
 
-class GithubPR:
+class GithubPR(MR):
     def __init__(self, repo, pr):
         self._repo = repo
         self._pr = pr
 
-    @property
-    def title(self):
-        return self._pr.title
+        super().__init__(
+            title=pr.title,
+            url=pr.html_url,
+            branch=pr.head.ref
+        )
 
     @property
     def ci_status(self):
@@ -275,18 +289,6 @@ class GithubPR:
     @property
     def approved(self):
         return self._pr.mergeable
-
-    @property
-    def url(self):
-        return self._pr.html_url
-
-    @property
-    def branch(self):
-        return self._pr.head.ref
-
-    @property
-    def has_review(self):
-        return self._pr.comments > 0
 
     @property
     def reviews(self):
@@ -319,7 +321,7 @@ class GithubComment(Review):
             created_at=comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal()),
             body=comment.body,
             url=comment.html_url
-        )\
+        )
 
 class BitbarPrinter:
     def __init__(self):

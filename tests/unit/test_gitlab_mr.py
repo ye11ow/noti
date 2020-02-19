@@ -32,9 +32,6 @@ class TestGitlabMR:
     
     def test_branch(self, default_mr):
         assert default_mr.branch == '_branch_'
-
-    def test_has_review(self, default_mr):
-        assert default_mr.has_review
             
     def test_reviews(self):
         notes = [
