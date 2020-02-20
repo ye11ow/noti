@@ -35,4 +35,9 @@ class DummyMR:
         self.approvals = MagicMock()
         self.approvals.get.return_value.attributes.get.return_value = approved
 
-
+class DummyJob:
+    def __init__(self, name='_name_', url='_url_'):
+        self.attributes = {
+            'name': name,
+            'web_url': url
+        }

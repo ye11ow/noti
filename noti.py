@@ -15,6 +15,35 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+class VCS:
+
+    def __init__(self, config):
+        self._config = config.get(self.name, {})
+        self._global_config = config.get('global', {})
+
+    def get_config(self, item, default_value=None):
+        if item in self._config:
+            return self._config.get(item)
+        if item in self._global_config:
+            return self._global_config.get(item)
+        
+        return default_value
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def global_config(self):
+        return self._global_config
+
+    @property
+    def name(self):
+        raise NotImplementedError
+
+    def get_mrs(self):
+        raise NotImplementedError
+
 class Review:
 
     def __init__(self, author, created_at, body, url):
@@ -46,7 +75,6 @@ class MR:
         self._ci_status = ci_status
         self._url = url
         self._branch = branch
-        pass
 
     @property
     def title(self):
@@ -63,6 +91,20 @@ class MR:
     @property
     def branch(self):
         return self._branch
+
+class CIJob:
+
+    def __init__(self, name, url):
+        self._name = name
+        self._url = url
+    
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def url(self):
+        return self._url
 
 class NotiConfig:
 
@@ -119,31 +161,34 @@ class NotiError(Exception):
         self.title = title
         self.message = message
 
-class Gitlab:
+class Gitlab(VCS):
     def __init__(self, config):
+        super().__init__(config)
+
         try:
             import gitlab
         except:
             raise NotiError('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
 
-        self._config = config.get('gitlab', {})
-        self._global_config = config.get('global', {})
-
-        host = self._config.get('host', '')
-        token = self._config.get('token', '')
+        host = self.get_config('host', '')
+        token = self.get_config('token', '')
         if len(host) + len(token) == 0:
             raise NotiError('Wrong Gitlab configuration', 'Please make sure you have the right host and token')
     
         self._gl = gitlab.Gitlab(host, private_token=token)
 
+    @property
+    def name(self):
+        return 'gitlab'
+
     def get_mrs(self):
         mrs = {}
 
-        for pid in self._config.get('project_id'):
+        for pid in self.get_config('project_id', []):
             project = self._gl.projects.get(pid)
             name = project.attributes.get('name')
             mrs[name] = []
-            for list_mr in project.mergerequests.list(state='opened', per_page=self._global_config.get('mr_limit')):
+            for list_mr in project.mergerequests.list(state='opened', per_page=self.get_config('mr_limit')):
                 mr = project.mergerequests.get(list_mr.get_id())
                 mrs[name].append(GitlabMR(project, mr))
 
@@ -200,17 +245,13 @@ class GitlabMR(MR):
 
         return self._reviews
 
-class PipelineJob:
+class PipelineJob(CIJob):
+    
     def __init__(self, job):
-        self._job = job
-
-    @property
-    def name(self):
-        return self._job.attributes.get('name')
-
-    @property
-    def url(self):
-        return self._job.attributes.get('web_url')
+        super().__init__(
+            name=job.attributes.get('name'),
+            url=job.attributes.get('web_url')
+        )
 
 class GitlabReview(Review):
 
@@ -222,25 +263,29 @@ class GitlabReview(Review):
             url=f"{mr.url}#note_{review.get_id()}"
         )
 
-class Github:
+class Github(VCS):
     def __init__(self, config):
+        super().__init__(config)
+
         try:
-            from github import Github as GH
+            import github
         except:
             raise NotiError('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
-        self._config = config.get('github', {})
-        self._global_config = config.get('global', {})
-        token = self._config.get('token', '')
+        token = self.get_config('token', '')
         if len(token) == 0:
             raise NotiError('Wrong Github configuration', 'Please make sure you have the right token')
 
-        self._gh = GH(token)
+        self._gh = github.Github(token)
+
+    @property
+    def name(self):
+        return 'github'
 
     def get_mrs(self):
         mrs = {}
 
-        for repo_name in self._config.get('repo'):
+        for repo_name in self.get_config('repo', []):
             mrs[repo_name] = []
             repo = self._gh.get_repo(repo_name)
             pulls = repo.get_pulls(state='open', sort='created', base='master')
@@ -248,7 +293,7 @@ class Github:
                 mrs[repo_name].append(GithubPR(repo, pr))
                 
                 # Github SDK doesn't support per_page parameter
-                if len(mrs[repo_name]) >= self._global_config.get('mr_limit'):
+                if len(mrs[repo_name]) >= self.get_config('mr_limit'):
                     break
 
         return mrs
@@ -301,17 +346,13 @@ class GithubPR(MR):
 
         return self._comments
 
-class TravisBuild:
+class TravisBuild(CIJob):
+
     def __init__(self, build):
-        self._build = build
-
-    @property
-    def name(self):
-        return self._build.context
-
-    @property
-    def url(self):
-        return self._build.target_url
+        super().__init__(
+            name=build.context,
+            url=build.target_url
+        )
 
 class GithubComment(Review):
     

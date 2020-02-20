@@ -18,7 +18,13 @@ class TestGitlabMR:
 
     def test_failed_pipeline_jobs(self):
         mock_project = MagicMock()
-        mock_project.pipelines.get.return_value.jobs.list.return_value = [1,2,3,4,5]
+        mock_project.pipelines.get.return_value.jobs.list.return_value = [
+            mock.DummyJob(),
+            mock.DummyJob(),
+            mock.DummyJob(),
+            mock.DummyJob(),
+            mock.DummyJob()
+        ]
         mr = GitlabMR(mock_project, mock.DummyMR())
         
         assert len(mr.failed_pipeline_jobs) == 5
