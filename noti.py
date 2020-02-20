@@ -30,14 +30,6 @@ class VCS:
         return default_value
 
     @property
-    def config(self):
-        return self._config
-
-    @property
-    def global_config(self):
-        return self._global_config
-
-    @property
     def name(self):
         raise NotImplementedError
 
