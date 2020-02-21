@@ -21,7 +21,7 @@ class TestNotiConfig:
         vcs = conf.init_vcs()
         fp.close()
 
-        assert vcs == gitlab.return_value 
+        assert vcs[0] == gitlab.return_value 
 
     @patch('noti.Github')
     def test_init_vcs_github(self, github):
@@ -36,7 +36,24 @@ class TestNotiConfig:
         vcs = conf.init_vcs()
         fp.close()
 
-        assert vcs == github.return_value 
+        assert vcs[0] == github.return_value 
+
+    @patch('noti.Gitlab')
+    @patch('noti.Github')
+    def test_init_vcs_both(self, github, gitlab):
+        fp = tempfile.NamedTemporaryFile('w')
+        fp.write('''
+        {
+            "github": {},
+            "gitlab": {}
+        }
+        ''')
+        fp.flush()
+        conf = NotiConfig(Path(fp.name))
+        vcs = conf.init_vcs()
+        fp.close()
+
+        assert len(vcs) == 2
 
     def test_init_vcs_none(self):
         fp = tempfile.NamedTemporaryFile('w')

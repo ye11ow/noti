@@ -138,15 +138,19 @@ class NotiConfig:
             self.conf_path.write_text(json.dumps(self.DEFAULT_CONFIG, indent=4))
 
     def init_vcs(self):
+        vcs = []
         user_config = json.loads(self.conf_path.read_text())
         self.config = {**self.DEFAULT_CONFIG, **user_config}
 
         if 'gitlab' in user_config:
-            return Gitlab(self.config)
-        elif 'github' in user_config:
-            return Github(self.config)
-        else:
+            vcs.append(Gitlab(self.config))
+        if 'github' in user_config:
+            vcs.append(Github(self.config))
+        
+        if len(vcs) == 0:
             raise NotiError('Wrong configuration', 'You have to configure either gitlab or github')
+
+        return vcs
 
 class NotiError(Exception):
     def __init__(self, title, message):
@@ -156,7 +160,7 @@ class NotiError(Exception):
 class Gitlab(VCS):
     def __init__(self, config):
         super().__init__(config)
-
+        
         try:
             import gitlab
         except:
@@ -493,9 +497,11 @@ except:
 if __name__== "__main__":
     conf = NotiConfig()
 
+    mrs = {}
     try:
         vcs = conf.init_vcs()
-        mrs = vcs.get_mrs()
+        for v in vcs:
+            mrs.update(v.get_mrs())
     except NotiError as err:
         bp.print_error(err.title, err.message)        
     except Exception as err:

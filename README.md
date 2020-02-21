@@ -19,7 +19,6 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests. It is di
 ## Configurations
 
 ```javascript
-// Current Noti only supports 1 VCS at a time. You CANNOT configure both gitlab and github.
 // Make sure you remove all the comments before saving the .noticonfig.json file
 {
     // Gitlab related configurations
