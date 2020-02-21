@@ -64,8 +64,7 @@ class TestNotiConfig:
         ''')
         fp.flush()
         conf = NotiConfig(Path(fp.name))
-
-        with pytest.raises(NotiError):
-            vcs = conf.init_vcs()
-
+        vcs = conf.init_vcs()
         fp.close()
+
+        assert len(vcs) == 0

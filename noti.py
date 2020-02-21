@@ -147,9 +147,6 @@ class NotiConfig:
         if 'github' in user_config:
             vcs.append(Github(self.config))
         
-        if len(vcs) == 0:
-            raise NotiError('Wrong configuration', 'You have to configure either gitlab or github')
-
         return vcs
 
 class NotiError(Exception):
@@ -491,20 +488,22 @@ try:
     from dateutil import parser
     from dateutil.tz import tzlocal
     from dateutil.tz import tzutc
+    from requests.exceptions import ConnectionError
 except:
     bp.print_error('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
 
 if __name__== "__main__":
     conf = NotiConfig()
+    vcs = conf.init_vcs()
+
+    if len(vcs) == 0:
+        bp.print_error('Wrong configuration', 'You have to configure either gitlab or github')        
 
     mrs = {}
     try:
-        vcs = conf.init_vcs()
         for v in vcs:
-            mrs.update(v.get_mrs())
-    except NotiError as err:
-        bp.print_error(err.title, err.message)        
-    except Exception as err:
+            mrs.update(v.get_mrs())   
+    except ConnectionError:
         bp.print_error("failed to connect to the server", None)
 
     bp.generate_title(mrs)
