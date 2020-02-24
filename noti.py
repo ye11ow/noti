@@ -502,8 +502,7 @@ try:
 except:
     bp.print_error('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
 
-if __name__== "__main__":
-    conf = NotiConfig()
+def main(conf, bp):
     vcs = conf.init_vcs()
 
     if len(vcs) == 0:
@@ -526,3 +525,7 @@ if __name__== "__main__":
             bp.generate_mr(mr)
 
     bp.print()
+
+if __name__ == "__main__":
+    conf = NotiConfig()
+    main(conf, bp)
