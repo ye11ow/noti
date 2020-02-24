@@ -23,23 +23,26 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests. It is di
 {
     // Gitlab related configurations
     "gitlab": {
-        //  Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
+        // Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
         "token": "",
 
-        //  Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
+        // Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
         "project_id": [],
 
-        //  The host of the gitlab server. e.g. https://gitlab.example.com
-        "host": "",
+        // [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
+        'host': ''
     },
 
-    //  Github related configurations
+    // Github related configurations
     "github": {
-        //  Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
+        // Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
         "token": "",
 
-        //  The name of the repo, e.g. "ye11ow/noti"
-        "repo": []
+        // The name of the repo, e.g. "ye11ow/noti"
+        "repo": [],
+
+        // [Optional] The host of the github server. Leave it empty to use the public Github server.
+        'host': ''
     }
 }
 ```

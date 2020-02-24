@@ -109,8 +109,8 @@ class NotiConfig:
             # Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
             'project_id': [],
 
-            # The host of the gitlab server. e.g. https://gitlab.example.com
-            'host': '',
+            # [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
+            'host': ''
         },
 
         # Github related configurations
@@ -119,7 +119,10 @@ class NotiConfig:
             'token': '',
 
             # The name of the repo, e.g. "ye11ow/noti"
-            'repo': ['']
+            'repo': [''],
+
+            # [Optional] The host of the github server. Leave it empty to use the public Github server.
+            'host': ''
         },
 
         # Shared configurations
@@ -165,8 +168,11 @@ class Gitlab(VCS):
 
         host = self.get_config('host', '')
         token = self.get_config('token', '')
-        if len(host) + len(token) == 0:
-            raise NotiError('Wrong Gitlab configuration', 'Please make sure you have the right host and token')
+        if len(token) == 0:
+            raise NotiError('Wrong Gitlab configuration', 'Please make sure you have the right token')
+
+        if len(host) == 0:
+            host = 'https://gitlab.com'
     
         self._gl = gitlab.Gitlab(host, private_token=token)
 
@@ -265,12 +271,16 @@ class Github(VCS):
         except:
             raise NotiError('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
+        host = self.get_config('host', '')
         token = self.get_config('token', '')
         if len(token) == 0:
             raise NotiError('Wrong Github configuration', 'Please make sure you have the right token')
 
-        self._gh = github.Github(token)
+        if len(host) == 0:
+            host = 'https://api.github.com'
 
+        self._gh = github.Github(token, base_url=host)
+        
     @property
     def name(self):
         return 'github'
