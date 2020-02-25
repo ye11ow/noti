@@ -5,18 +5,15 @@ from noti import VCS
 class DummyVCS(VCS):
 
     def __init__(self, config):
-        super().__init__(config)
+        super().__init__('_name_', config, '_host_')
     
-    @property
-    def name(self):
-        return 'dummy'
 
 class TestVCS:
 
     @pytest.fixture
     def vcs(self):
         return DummyVCS({
-            'dummy': {
+            '_name_': {
                 'config': '_config_',
                 'duplicate_config': 'dummy_config'
             },

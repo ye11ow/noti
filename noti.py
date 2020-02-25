@@ -17,9 +17,11 @@ from datetime import datetime
 
 class VCS:
 
-    def __init__(self, config):
-        self._config = config.get(self.name, {})
+    def __init__(self, name, config, default_host):
+        self._name = name
+        self._config = config.get(name, {})
         self._global_config = config.get('global', {})
+        self._default_host = default_host
 
     def get_config(self, item, default_value=None):
         if item in self._config:
@@ -31,7 +33,23 @@ class VCS:
 
     @property
     def name(self):
-        raise NotImplementedError
+        return self._name
+
+    @property
+    def token(self):
+        token = self.get_config('token', '')
+        if len(token) == 0:
+            raise NotiError(f"Wrong {self.name} configuration", 'Please make sure you have the right token')
+
+        return token
+
+    @property
+    def host(self):
+        host = self.get_config('host', '')
+        if len(host) == 0:
+            host = self._default_host
+        
+        return host
 
     def get_mrs(self):
         raise NotImplementedError
@@ -159,26 +177,14 @@ class NotiError(Exception):
 
 class Gitlab(VCS):
     def __init__(self, config):
-        super().__init__(config)
+        super().__init__('gitlab', config, 'https://gitlab.com')
         
         try:
             import gitlab
         except:
             raise NotiError('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
 
-        host = self.get_config('host', '')
-        token = self.get_config('token', '')
-        if len(token) == 0:
-            raise NotiError('Wrong Gitlab configuration', 'Please make sure you have the right token')
-
-        if len(host) == 0:
-            host = 'https://gitlab.com'
-    
-        self._gl = gitlab.Gitlab(host, private_token=token)
-
-    @property
-    def name(self):
-        return 'gitlab'
+        self._gl = gitlab.Gitlab(self.host, private_token=self.token)
 
     def get_mrs(self):
         mrs = {}
@@ -264,26 +270,14 @@ class GitlabReview(Review):
 
 class Github(VCS):
     def __init__(self, config):
-        super().__init__(config)
+        super().__init__('github', config, 'https://api.github.com')
 
         try:
             import github
         except:
             raise NotiError('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
-        host = self.get_config('host', '')
-        token = self.get_config('token', '')
-        if len(token) == 0:
-            raise NotiError('Wrong Github configuration', 'Please make sure you have the right token')
-
-        if len(host) == 0:
-            host = 'https://api.github.com'
-
-        self._gh = github.Github(token, base_url=host)
-        
-    @property
-    def name(self):
-        return 'github'
+        self._gh = github.Github(self.token, base_url=self.host)
 
     def get_mrs(self):
         mrs = {}

@@ -30,3 +30,21 @@ class TestNoti:
         main(conf, bp)
 
         assert bp.print_error.assert_called
+
+    def test_happy_path(self, conf, bp):
+        vcs = MagicMock()
+        mrs = {
+            '_repo_': [
+                '_mr_',
+                '_mr_'
+            ]
+        }
+        vcs.get_mrs.return_value = mrs
+        conf.init_vcs.return_value = [vcs]
+        
+        main(conf, bp)
+
+        bp.generate_title.assert_called_with(mrs) 
+        bp.add.assert_called_with('_repo_')
+        bp.generate_mr.assert_called_with('_mr_')
+        bp.print.assert_called()
