@@ -476,14 +476,28 @@ class BitbarPrinter:
         self.title(title)
 
     def time_diff(self, before):
-        diff = (datetime.now().astimezone(tzlocal()) - before).seconds
+        diff = (datetime.now().astimezone(tzlocal()) - before)
+        seconds = diff.seconds
+        days = diff.days
 
-        hours = int(diff/3600)
+        days_text = ''
+        if days > 365:
+            return 'long long ago'
+        elif days > 7:
+            return f"{days} days ago"
+
+        hours = int(seconds/3600)
         hours_text = ''
         if hours > 0:
-            hours_text = f"{hours} hours "
-        minutes = int(diff%3600/60)
+            hours_text = f"{hours} hours"
 
+        if days > 1:
+            return f"{days} days {hours_text} ago"
+
+        if hours > 0:
+            hours_text += ' '
+
+        minutes = int(seconds%3600/60)
         return f"{hours_text}{minutes} minutes ago"
 
 bp = BitbarPrinter()

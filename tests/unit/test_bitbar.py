@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from dateutil.tz import tzlocal
+from dateutil import parser
 
 from noti import BitbarPrinter
 
@@ -46,6 +47,7 @@ def create_review(author, body):
     review = MagicMock()
     review.author = author
     review.body = body
+    review.created_at = parser.parse('2020-02-02T20:20:20Z')
 
     return review
 
@@ -58,7 +60,7 @@ def create_failed_job(name, url):
 
 class TestBitbarPrinter:
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def bp(self):
         return BitbarPrinter()
 
@@ -68,6 +70,15 @@ class TestBitbarPrinter:
 
         before = datetime.now().astimezone(tzlocal()) - timedelta(minutes=130)
         assert bp.time_diff(before) == "2 hours 10 minutes ago"
+
+        before = datetime.now().astimezone(tzlocal()) - timedelta(days=3,minutes=130)
+        assert bp.time_diff(before) == "3 days 2 hours ago"
+
+        before = datetime.now().astimezone(tzlocal()) - timedelta(days=24,minutes=130)
+        assert bp.time_diff(before) == "24 days ago"
+
+        before = datetime.now().astimezone(tzlocal()) - timedelta(days=400,minutes=130)
+        assert bp.time_diff(before) == "long long ago"
 
     def test_print_title_only(self, bp):
         bp.title('MYTITLE')
