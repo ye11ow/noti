@@ -104,9 +104,9 @@ class TestBitbarPrinter:
 
         assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json"\n'
         
-    def test_print_error(self, bp):
+    def test_fatal(self, bp):
         with pytest.raises(SystemExit):
-            bp.print_error('hello', 'world')
+            bp.fatal('hello', 'world')
 
     def test_generate_title_no_mr(self, bp):
         bp.generate_title({})

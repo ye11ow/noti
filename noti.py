@@ -39,7 +39,7 @@ class VCS:
     def token(self):
         token = self.get_config('token', '')
         if len(token) == 0:
-            raise NotiError(f"Wrong {self.name} configuration", 'Please make sure you have the right token')
+            raise NotiError(self._name, 'Wrong configuration: Please make sure you have the right token')
 
         return token
 
@@ -171,8 +171,8 @@ class NotiConfig:
         return vcs
 
 class NotiError(Exception):
-    def __init__(self, title, message):
-        self.title = title
+    def __init__(self, vcs, message):
+        self.vcs = vcs
         self.message = message
 
 class Gitlab(VCS):
@@ -182,7 +182,7 @@ class Gitlab(VCS):
         try:
             import gitlab
         except:
-            raise NotiError('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
+            raise NotiError('gitlab', 'Missing dependencies: You need to install python-gitlab')
 
         self._gl = gitlab.Gitlab(self.host, private_token=self.token)
 
@@ -275,7 +275,7 @@ class Github(VCS):
         try:
             import github
         except:
-            raise NotiError('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
+            raise NotiError('github', 'Missing dependencies: You need to install PyGithub')
 
         self._gh = github.Github(self.token, base_url=self.host)
 
@@ -391,7 +391,10 @@ class BitbarPrinter:
                 print(config)
 
     # print_error will override title and body with error messages.
-    def print_error(self, title, extra):
+    def add_error(self, title):
+        self._configs.insert(0, f"{title}| color=red")
+    
+    def fatal(self, title, extra):
         self.clear()
 
         self.title(title)
@@ -506,22 +509,23 @@ try:
     from dateutil import parser
     from dateutil.tz import tzlocal
     from dateutil.tz import tzutc
-    from requests.exceptions import ConnectionError
 except:
-    bp.print_error('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
+    bp.fatal('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
 
 def main(conf, bp):
     vcs = conf.init_vcs()
 
     if len(vcs) == 0:
-        bp.print_error('Wrong configuration', 'You have to configure either gitlab or github')        
+        bp.fatal('Wrong configuration', 'You have to configure either gitlab or github')        
 
     mrs = {}
-    try:
-        for v in vcs:
+
+    from requests.exceptions import ConnectionError
+    for v in vcs:
+        try:
             mrs.update(v.get_mrs())   
-    except ConnectionError:
-        bp.print_error("failed to connect to the server", None)
+        except ConnectionError:
+            bp.add_error(f"{v.name}: failed to connect to the server")
 
     bp.generate_title(mrs)
     for repo_name, repo_mrs in mrs.items():
