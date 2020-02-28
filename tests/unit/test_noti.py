@@ -10,28 +10,22 @@ class TestNoti:
     @pytest.fixture
     def bp(self):
         return MagicMock()
-    
-    @pytest.fixture
-    def conf(self):
-        return MagicMock()
 
-    def test_no_vcs(self, conf, bp):
-        conf.init_vcs.return_value = []
+    def test_no_vcs(self, bp):
+        main([], bp)
 
-        main(conf, bp)
+        bp.fatal.assert_called
 
-        assert bp.print_error.assert_called
-
-    def test_no_connection(self, conf, bp):
+    def test_no_connection(self, bp):
         vcs = MagicMock()
+        vcs.name = '_name_'
         vcs.get_mrs.side_effect = ConnectionError()
-        conf.init_vcs.return_value = [vcs]
 
-        main(conf, bp)
+        main([vcs], bp)
 
-        assert bp.print_error.assert_called
+        bp.add_error.assert_called_with('_name_: failed to connect to the server')
 
-    def test_happy_path(self, conf, bp):
+    def test_happy_path(self, bp):
         vcs = MagicMock()
         mrs = {
             '_repo_': [
@@ -40,9 +34,8 @@ class TestNoti:
             ]
         }
         vcs.get_mrs.return_value = mrs
-        conf.init_vcs.return_value = [vcs]
         
-        main(conf, bp)
+        main([vcs], bp)
 
         bp.generate_title.assert_called_with(mrs) 
         bp.add.assert_called_with('_repo_')

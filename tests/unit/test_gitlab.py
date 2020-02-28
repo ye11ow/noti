@@ -11,14 +11,10 @@ class TestGitlab:
     @pytest.fixture(autouse=True)
     def config(self):
         return {
-            "gitlab": {
-                "token": "fake",
-                "project_id": [1],
-                "host": "https://example.com"
-            },
-            "global": {
-                "mr_limit": 5
-            }
+            "token": "fake",
+            "project_id": [1],
+            "host": "https://example.com",
+            "mr_limit": 5
         }
 
     def test_init(self, config):
@@ -27,11 +23,9 @@ class TestGitlab:
 
     def test_init_with_wrong_config(self):
         config = {
-            "gitlab": {
-                "token": "",
-                "project_id": [1],
-                "host": ""
-            }
+            "token": "",
+            "project_id": [1],
+            "host": ""
         }
         with pytest.raises(NotiError):
             g = Gitlab(config)

@@ -19,17 +19,11 @@ class VCS:
 
     def __init__(self, name, config, default_host):
         self._name = name
-        self._config = config.get(name, {})
-        self._global_config = config.get('global', {})
+        self._config = config
         self._default_host = default_host
 
     def get_config(self, item, default_value=None):
-        if item in self._config:
-            return self._config.get(item)
-        if item in self._global_config:
-            return self._global_config.get(item)
-        
-        return default_value
+        return self._config.get(item, default_value)
 
     @property
     def name(self):
@@ -158,17 +152,15 @@ class NotiConfig:
         if not self.conf_path.exists():
             self.conf_path.write_text(json.dumps(self.DEFAULT_CONFIG, indent=4))
 
-    def init_vcs(self):
-        vcs = []
-        user_config = json.loads(self.conf_path.read_text())
-        self.config = {**self.DEFAULT_CONFIG, **user_config}
+        self._user_config = json.loads(self.conf_path.read_text())
+        self._shared_config = self.DEFAULT_CONFIG.get('global')
 
-        if 'gitlab' in user_config:
-            vcs.append(Gitlab(self.config))
-        if 'github' in user_config:
-            vcs.append(Github(self.config))
-        
-        return vcs
+    @property
+    def user_config(self):
+        return self._user_config
+
+    def get_config(self, vcs):
+        return {**self._shared_config, **self.user_config.get(vcs)}
 
 class NotiError(Exception):
     def __init__(self, vcs, message):
@@ -512,9 +504,7 @@ try:
 except:
     bp.fatal('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
 
-def main(conf, bp):
-    vcs = conf.init_vcs()
-
+def main(vcs, bp):
     if len(vcs) == 0:
         bp.fatal('Wrong configuration', 'You have to configure either gitlab or github')        
 
@@ -540,4 +530,10 @@ def main(conf, bp):
 
 if __name__ == "__main__":
     conf = NotiConfig()
-    main(conf, bp)
+    vcs = []
+    if 'gitlab' in conf.user_config:
+        vcs.append(Gitlab(conf.get_config('gitlab')))
+    if 'github' in conf.user_config:
+        vcs.append(Github(conf.get_config('github')))
+
+    main(vcs, bp)
