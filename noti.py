@@ -163,9 +163,10 @@ class NotiConfig:
         return {**self._shared_config, **self.user_config.get(vcs)}
 
 class NotiError(Exception):
-    def __init__(self, vcs, message):
+    def __init__(self, vcs, message, help_link=None):
         self.vcs = vcs
         self.message = message
+        self.help_link = help_link
 
 class Gitlab(VCS):
     def __init__(self, config):
@@ -174,7 +175,7 @@ class Gitlab(VCS):
         try:
             import gitlab
         except:
-            raise NotiError('gitlab', 'Missing dependencies: You need to install python-gitlab')
+            raise NotiError('gitlab', 'Missing dependencies: You need to install python-gitlab', 'https://python-gitlab.readthedocs.io/en/stable/install.html')
 
         self._gl = gitlab.Gitlab(self.host, private_token=self.token)
 
@@ -267,7 +268,7 @@ class Github(VCS):
         try:
             import github
         except:
-            raise NotiError('github', 'Missing dependencies: You need to install PyGithub')
+            raise NotiError('github', 'Missing dependencies: You need to install PyGithub', 'https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
         self._gh = github.Github(self.token, base_url=self.host)
 
@@ -386,12 +387,13 @@ class BitbarPrinter:
     def add_error(self, title):
         self._configs.insert(0, f"{title}| color=red")
     
-    def fatal(self, title, extra):
+    def fatal(self, message, help_link=None):
         self.clear()
 
-        self.title(title)
-        if extra:
-            self.add(extra)
+        self.title('Noti Error | color=red')
+        if help_link is not None:
+            message += ' | color=red href=' + help_link
+        self.add(message)
 
         self.print()
         exit(1)
@@ -502,11 +504,11 @@ try:
     from dateutil.tz import tzlocal
     from dateutil.tz import tzutc
 except:
-    bp.fatal('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
+    bp.fatal('Missing dependencies: You need to install python-dateutil', 'https://dateutil.readthedocs.io/en/stable/#installation')
 
 def main(vcs, bp):
     if len(vcs) == 0:
-        bp.fatal('Wrong configuration', 'You have to configure either gitlab or github')        
+        bp.fatal('You have to configure either gitlab or github')        
 
     mrs = {}
 
@@ -531,9 +533,12 @@ def main(vcs, bp):
 if __name__ == "__main__":
     conf = NotiConfig()
     vcs = []
-    if 'gitlab' in conf.user_config:
-        vcs.append(Gitlab(conf.get_config('gitlab')))
-    if 'github' in conf.user_config:
-        vcs.append(Github(conf.get_config('github')))
+    try:
+        if 'gitlab' in conf.user_config:
+            vcs.append(Gitlab(conf.get_config('gitlab')))
+        if 'github' in conf.user_config:
+            vcs.append(Github(conf.get_config('github')))
+    except NotiError as e:
+        bp.fatal(f"[{e.vcs}] {e.message}", e.help_link)
 
     main(vcs, bp)
