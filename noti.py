@@ -511,7 +511,16 @@ try:
 except:
     bp.fatal('Missing dependencies: You need to install python-dateutil', 'https://dateutil.readthedocs.io/en/stable/#installation')
 
-def main(vcs, bp):
+def main(registry, conf, bp):
+    vcs = []
+    for s in registry:
+        key = s.name.lower()
+        if key in conf.user_config:
+            try:
+                vcs.append(s(conf.get_config(key)))
+            except NotiError as e:
+                bp.fatal(f"[{e.vcs}] {e.message}", e.help_link)
+
     if len(vcs) == 0:
         bp.fatal('You have to configure either gitlab or github')        
 
@@ -538,13 +547,5 @@ def main(vcs, bp):
 if __name__ == "__main__":
     conf = NotiConfig()
     registry = [Gitlab, Github]
-    vcs = []
-    for s in registry:
-        key = s.name.lower()
-        if key in conf.user_config:
-            try:
-                vcs.append(s(conf.get_config(key)))
-            except NotiError as e:
-                bp.fatal(f"[{e.vcs}] {e.message}", e.help_link)
 
-    main(vcs, bp)
+    main(registry, conf, bp)
