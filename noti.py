@@ -17,8 +17,7 @@ from datetime import datetime
 
 class VCS:
 
-    def __init__(self, name, config, default_host):
-        self._name = name
+    def __init__(self, config, default_host):
         self._config = config
         self._default_host = default_host
 
@@ -26,14 +25,14 @@ class VCS:
         return self._config.get(item, default_value)
 
     @property
-    def name(self):
-        return self._name
+    def name(cls):
+        raise NotImplementedError
 
     @property
     def token(self):
         token = self.get_config('token', '')
         if len(token) == 0:
-            raise NotiError(self._name, 'Wrong configuration: Please make sure you have the right token')
+            raise NotiError(self.name, 'Wrong configuration: Please make sure you have the right token')
 
         return token
 
@@ -169,13 +168,16 @@ class NotiError(Exception):
         self.help_link = help_link
 
 class Gitlab(VCS):
+    
+    name = 'Gitlab'
+
     def __init__(self, config):
-        super().__init__('gitlab', config, 'https://gitlab.com')
+        super().__init__(config, 'https://gitlab.com')
         
         try:
             import gitlab
         except:
-            raise NotiError('gitlab', 'Missing dependencies: You need to install python-gitlab', 'https://python-gitlab.readthedocs.io/en/stable/install.html')
+            raise NotiError(self.name, 'Missing dependencies: You need to install python-gitlab', 'https://python-gitlab.readthedocs.io/en/stable/install.html')
 
         self._gl = gitlab.Gitlab(self.host, private_token=self.token)
 
@@ -262,13 +264,16 @@ class GitlabReview(Review):
         )
 
 class Github(VCS):
+
+    name = 'Github'
+
     def __init__(self, config):
-        super().__init__('github', config, 'https://api.github.com')
+        super().__init__(config, 'https://api.github.com')
 
         try:
             import github
         except:
-            raise NotiError('github', 'Missing dependencies: You need to install PyGithub', 'https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
+            raise NotiError(self.name, 'Missing dependencies: You need to install PyGithub', 'https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
         self._gh = github.Github(self.token, base_url=self.host)
 
@@ -532,13 +537,14 @@ def main(vcs, bp):
 
 if __name__ == "__main__":
     conf = NotiConfig()
+    registry = [Gitlab, Github]
     vcs = []
-    try:
-        if 'gitlab' in conf.user_config:
-            vcs.append(Gitlab(conf.get_config('gitlab')))
-        if 'github' in conf.user_config:
-            vcs.append(Github(conf.get_config('github')))
-    except NotiError as e:
-        bp.fatal(f"[{e.vcs}] {e.message}", e.help_link)
+    for s in registry:
+        key = s.name.lower()
+        if key in conf.user_config:
+            try:
+                vcs.append(s(conf.get_config(key)))
+            except NotiError as e:
+                bp.fatal(f"[{e.vcs}] {e.message}", e.help_link)
 
     main(vcs, bp)

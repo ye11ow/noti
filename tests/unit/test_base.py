@@ -4,8 +4,15 @@ from noti import VCS
 
 class DummyVCS(VCS):
 
+    name = '_name_'
+
     def __init__(self, config):
-        super().__init__('_name_', config, '_host_')
+        super().__init__(config, '_host_')
+
+class DummyVCSNoname(VCS):
+    
+    def __init__(self, config):
+        super().__init__(config, '_host_')
     
 
 class TestVCS:
@@ -31,3 +38,8 @@ class TestVCS:
 
     def test_token(self, vcs):
         assert vcs.token == '_token_'
+
+    def test_no_name_vcs(self):
+        vcs = DummyVCSNoname({})
+        with pytest.raises(NotImplementedError):
+            assert vcs.name
