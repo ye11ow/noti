@@ -139,7 +139,15 @@ class NotiConfig:
         # Shared configurations
         'global': {
             # Max number of MRs that will be shown on the list
-            'mr_limit': 5
+            'mr_limit': 5,
+        },
+
+        'bitbar': {
+            'good_day': '😃',
+            'approved': '👍',
+            'running': '🏃',
+            'failed': '🙃',
+            'comments': '💬'
         }
     }
 
@@ -160,6 +168,10 @@ class NotiConfig:
 
     def get_config(self, vcs):
         return {**self._shared_config, **self.user_config.get(vcs)}
+    
+    @property
+    def bitbar_config(self):
+        return {**self.DEFAULT_CONFIG.get('bitbar'), **self.user_config.get('bitbar', {})}
 
 class NotiError(Exception):
     def __init__(self, vcs, message, help_link=None):
@@ -360,10 +372,14 @@ class GithubComment(Review):
         )
 
 class BitbarPrinter:
-    def __init__(self):
-        self._title = ""
+
+    _default_config = 'Configure noti | bash="vi $HOME/.noticonfig.json"'
+
+    def __init__(self, conf):
+        self._conf = conf
+        self._title = ''
         self._items = []
-        self._configs = ['Configure noti | bash="vi $HOME/.noticonfig.json"']
+        self._configs = [self._default_config]
 
     def title(self, title):
         self._title = title    
@@ -392,15 +408,18 @@ class BitbarPrinter:
     def add_error(self, title):
         self._configs.insert(0, f"{title}| color=red")
     
-    def fatal(self, message, help_link=None):
-        self.clear()
+    @classmethod
+    def fatal(cls, message, help_link=None):
+        print('Noti Error | color=red')
+        print('---')
 
-        self.title('Noti Error | color=red')
         if help_link is not None:
             message += ' | color=red href=' + help_link
-        self.add(message)
+        print(message)
 
-        self.print()
+        print('---')
+        print(cls._default_config)
+
         exit(1)
 
     def generate_mr(self, mr):
@@ -412,7 +431,7 @@ class BitbarPrinter:
 
         title = ''
         if mr.approved:
-            title += ' 👍'
+            title += ' ' + self._conf.get('approved')
         title += f" | href={mr.url}"
 
         sub_text = ''
@@ -438,7 +457,7 @@ class BitbarPrinter:
         if len(mr.reviews) == 0:
             title = f"{mr.branch} {title}"
         else:
-            title = f"{mr.branch} 💬{len(mr.reviews)} {title}"
+            title = f"{mr.branch} {self._conf.get('comments')}{len(mr.reviews)} {title}"
 
         self.add(f"{title}\n\n\n{sub_text}")
         self.add(f"{mr.title} | alternate=true")
@@ -451,10 +470,10 @@ class BitbarPrinter:
             'comments': 0
         }
         pipeline_icon_map = {
-            'failed': '🙃',
-            'running': '🏃',
-            'comments': '💬',
-            'approved': '👍'
+            'failed': self._conf.get('failed'),
+            'running': self._conf.get('running'),
+            'comments': self._conf.get('comments'),
+            'approved': self._conf.get('approved')
         }
 
         for key, value in mrs.items():
@@ -473,7 +492,7 @@ class BitbarPrinter:
                 title += pipeline_icon_map[key] + str(statistics[key])
 
         if len(title) == 0:
-            title = '😃'
+            title = self._conf.get('good_day')
 
         self.title(title)
 
@@ -502,14 +521,12 @@ class BitbarPrinter:
         minutes = int(seconds%3600/60)
         return f"{hours_text}{minutes} minutes ago"
 
-bp = BitbarPrinter()
-
 try:
     from dateutil import parser
     from dateutil.tz import tzlocal
     from dateutil.tz import tzutc
 except:
-    bp.fatal('Missing dependencies: You need to install python-dateutil', 'https://dateutil.readthedocs.io/en/stable/#installation')
+    BitbarPrinter.fatal('Missing dependencies: You need to install python-dateutil', 'https://dateutil.readthedocs.io/en/stable/#installation')
 
 def main(registry, conf, bp):
     vcs = []
@@ -546,6 +563,7 @@ def main(registry, conf, bp):
 
 if __name__ == "__main__":
     conf = NotiConfig()
+    bp = BitbarPrinter(conf.bitbar_config)
     registry = [Gitlab, Github]
 
     main(registry, conf, bp)

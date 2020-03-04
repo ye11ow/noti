@@ -10,6 +10,7 @@ from dateutil.tz import tzlocal
 from dateutil import parser
 
 from noti import BitbarPrinter
+from noti import NotiConfig
 
 def proxy_print(bp):
     saved_stdout = sys.stdout
@@ -62,7 +63,7 @@ class TestBitbarPrinter:
 
     @pytest.fixture
     def bp(self):
-        return BitbarPrinter()
+        return BitbarPrinter(NotiConfig.DEFAULT_CONFIG.get('bitbar'))
 
     def test_time_diff(self, bp):
         before = datetime.now().astimezone(tzlocal()) - timedelta(minutes=30)
