@@ -2,7 +2,6 @@ import sys
 from datetime import datetime
 from datetime import timedelta
 from io import StringIO
-from unittest.mock import patch
 from unittest.mock import MagicMock
 
 import pytest
@@ -108,6 +107,14 @@ class TestBitbarPrinter:
     def test_fatal(self, bp):
         with pytest.raises(SystemExit):
             bp.fatal('hello', 'world')
+        
+    def test_add_error(self, bp):
+        bp.title('MYTITLE')
+        bp.add_error('_error_')
+
+        out = proxy_print(bp)
+
+        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | bash="vi $HOME/.noticonfig.json"\n'
 
     def test_generate_title_no_mr(self, bp):
         bp.generate_title({})

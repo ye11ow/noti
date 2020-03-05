@@ -387,10 +387,6 @@ class BitbarPrinter:
     def add(self, item):
         self._items.append(item)
 
-    def clear(self):
-        self.title('')
-        self._items = []
-
     def print(self):
         print(self._title)
 
@@ -404,9 +400,8 @@ class BitbarPrinter:
             for config in self._configs:
                 print(config)
 
-    # print_error will override title and body with error messages.
     def add_error(self, title):
-        self._configs.insert(0, f"{title}| color=red")
+        self._configs.insert(0, f"{title} | color=red")
     
     @classmethod
     def fatal(cls, message, help_link=None):
