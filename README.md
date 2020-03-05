@@ -30,7 +30,7 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests. It is di
         "project_id": [],
 
         // [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
-        'host': ''
+        "host": ""
     },
 
     // Github related configurations
@@ -38,11 +38,30 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests. It is di
         // Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
         "token": "",
 
-        // The name of the repo, e.g. "ye11ow/noti"
+        // The name of the repo. e.g. "ye11ow/noti"
         "repo": [],
 
         // [Optional] The host of the github server. Leave it empty to use the public Github server.
-        'host': ''
+        "host": ""
+    },
+
+    // Customize the emoji
+    "bitbar": {
+
+        // Show on the title when there isn't any status
+        "good_day": "😃",
+
+        // The MR is approved
+        "approved": "👍",
+
+        // The pipeline behind this MR is currently running
+        "running": "🏃",
+
+        // The pipeline is failed
+        "failed": "🙃",
+
+        // Number of comments
+        "comments": "💬"
     }
 }
 ```
