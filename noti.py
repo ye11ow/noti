@@ -322,6 +322,10 @@ class GithubPR(MR):
             sha = self._pr.head.sha
             self._status = self._repo.get_commit(sha).get_combined_status()
         
+        # The `state` will be pending even if there is no `statuses`
+        if len(self._status.statuses) == 0:
+            return ''
+
         state = self._status.state
         if state == 'pending':
             return 'running'
