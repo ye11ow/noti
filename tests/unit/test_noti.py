@@ -53,6 +53,6 @@ class TestNoti:
         main([vcs], conf, bp)
 
         bp.generate_title.assert_called_with(mrs) 
-        bp.add.assert_called_with('_repo_')
+        bp.add_repo.assert_called_with('_repo_')
         bp.generate_mr.assert_called_with('_mr_')
         bp.print.assert_called()

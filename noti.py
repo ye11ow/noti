@@ -384,7 +384,7 @@ class BitbarPrinter:
     def title(self, title):
         self._title = title    
     
-    def add(self, item):
+    def add_repo(self, item):
         self._items.append(item)
 
     def print(self):
@@ -432,6 +432,7 @@ class BitbarPrinter:
         sub_text = ''
 
         # pipeline field will be empty if it is cancelled
+        color = ''
         if mr.ci_status in pipeline_color_map:
             title += f" color={pipeline_color_map[mr.ci_status]}"
             if mr.ci_status == 'failed':
@@ -454,8 +455,8 @@ class BitbarPrinter:
         else:
             title = f"{mr.branch} {self._conf.get('comments')}{len(mr.reviews)} {title}"
 
-        self.add(f"{title}\n\n\n{sub_text}")
-        self.add(f"{mr.title} | alternate=true")
+        self._items.append(f"{title}\n\n\n{sub_text}")
+        self._items.append(f"{mr.title} | color=white alternate=true")
 
     def generate_title(self, mrs):
         statistics = {
@@ -550,7 +551,7 @@ def main(registry, conf, bp):
         if len(repo_mrs) == 0:
             continue
 
-        bp.add(repo_name)
+        bp.add_repo(repo_name)
         for mr in repo_mrs:
             bp.generate_mr(mr)
 
