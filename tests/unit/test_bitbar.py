@@ -71,8 +71,8 @@ class TestBitbarPrinter:
         before = datetime.now().astimezone(tzlocal()) - timedelta(minutes=130)
         assert bp.time_diff(before) == "2 hours 10 minutes ago"
 
-        # before = datetime.now().astimezone(tzlocal()) - timedelta(days=3,minutes=130)
-        # assert bp.time_diff(before) == "3 days 2 hours ago"
+        before = datetime.now().astimezone(tzlocal()) - timedelta(days=2,minutes=130)
+        assert bp.time_diff(before) == "2 days 2 hours ago"
 
         before = datetime.now().astimezone(tzlocal()) - timedelta(days=24,minutes=130)
         assert bp.time_diff(before) == "24 days ago"

@@ -14,8 +14,15 @@ class TestGithubPR:
         assert default_pr.title == '_title_'
     
     def test_ci_status(self, default_pr):
+        default_pr._repo.get_commit.return_value.get_combined_status.return_value.statuses = [1]
         default_pr._repo.get_commit.return_value.get_combined_status.return_value.state = 'success'
         assert default_pr.ci_status == 'success'
+        default_pr._repo.get_commit.assert_called_with('_sha_')
+        default_pr._repo.get_commit.return_value.get_combined_status.assert_called_once()
+    
+    def test_ci_status_no_statuses(self, default_pr):
+        default_pr._repo.get_commit.return_value.get_combined_status.return_value.state = 'pending'
+        assert default_pr.ci_status == ''
         default_pr._repo.get_commit.assert_called_with('_sha_')
         default_pr._repo.get_commit.return_value.get_combined_status.assert_called_once()
 
