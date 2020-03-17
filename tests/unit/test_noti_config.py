@@ -56,7 +56,7 @@ class TestNotiConfig:
 
         config = conf.get_config('github')
 
-        assert config.get('mr_limit') == 5
+        assert config.get('mr_limit') == 10
         assert config.get('hello') == 'world'
 
     def test_bitbar_config(self):

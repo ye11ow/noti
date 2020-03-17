@@ -139,7 +139,7 @@ class NotiConfig:
         # Shared configurations
         'global': {
             # Max number of MRs that will be shown on the list
-            'mr_limit': 5,
+            'mr_limit': 10,
         },
 
         'bitbar': {
@@ -287,7 +287,7 @@ class Github(VCS):
         except:
             raise NotiError(self.name, 'Missing dependencies: You need to install PyGithub', 'https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
-        self._gh = github.Github(self.token, base_url=self.host)
+        self._gh = github.Github(self.token, base_url=self.host, per_page=self.get_config('mr_limit'))
 
     def get_mrs(self):
         mrs = {}
@@ -295,13 +295,12 @@ class Github(VCS):
         for repo_name in self.get_config('repo', []):
             mrs[repo_name] = []
             repo = self._gh.get_repo(repo_name)
-            pulls = repo.get_pulls(state='open', sort='created', base='master')
+
+            # Here we only get the first page.
+            # Github supports page size up to 100 and it is more than enough for us
+            pulls = repo.get_pulls(state='open', sort='created', base='master').get_page(0)
             for pr in pulls:
                 mrs[repo_name].append(GithubPR(repo, pr))
-                
-                # Github SDK doesn't support per_page parameter
-                if len(mrs[repo_name]) >= self.get_config('mr_limit'):
-                    break
 
         return mrs
 

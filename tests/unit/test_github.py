@@ -10,14 +10,16 @@ class TestGithub:
     @pytest.fixture
     def config(self):
         return {
-            'token': 'fake',
+            'token': '_token_',
             'repo': ['_repo_'],
-            'host': 'https://example.com',
-            'mr_limit': 5
+            'host': '_host_',
+            'mr_limit': 10
         }
 
-    def test_init(self, config):
+    @patch('github.Github')
+    def test_init(self, mock_gh, config):
         g = Github(config)
+        mock_gh.assert_called_with(config.get('token'), base_url=config.get('host'), per_page=config.get('mr_limit'))
         assert g != None
 
     def test_init_with_wrong_config(self):
@@ -33,11 +35,11 @@ class TestGithub:
     def test_get_mrs(self, mock_gh, config):
         repo = MagicMock()
         mock_gh.return_value.get_repo.return_value = repo
-        repo.get_pulls.return_value = [MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+        repo.get_pulls.return_value.get_page.return_value = [MagicMock(), MagicMock(), MagicMock()]
 
         g = Github(config)
         mrs = g.get_mrs()
 
-        assert len(mrs['_repo_']) == config.get('mr_limit')
+        assert len(mrs['_repo_']) == 3
         mock_gh.return_value.get_repo.assert_called_with('_repo_')
         repo.get_pulls.assert_called_with(state='open', sort='created', base='master')
