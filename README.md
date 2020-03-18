@@ -7,10 +7,10 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
 
 ![Tutorial](https://github.com/ye11ow/noti/blob/master/docs/images/Bitbar.png?raw=true)
 
-* The background color indicate the status of the CI
-    * Green: Job passed
-    * Blue: Job is Running
-    * Red: Job failed
+* The background color indicate the status of the CI job behind this pull request
+    * <font color="Green">Green</font>: Job passed
+    * <font color="blue">Blue</font>: Job is running
+    * <font color="red">Red</font>: Job failed
 * Emojis:
     * 👍: Pull request is approved
     * 🏃: The CI job is running
