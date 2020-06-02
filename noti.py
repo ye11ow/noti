@@ -121,7 +121,11 @@ class NotiConfig:
             'project_id': [],
 
             # [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
-            'host': ''
+            'host': '',
+
+            'filters': {
+                'usernames': []
+            }
         },
 
         # Github related configurations
@@ -200,9 +204,20 @@ class Gitlab(VCS):
             project = self._gl.projects.get(pid)
             name = project.attributes.get('name')
             mrs[name] = []
-            for list_mr in project.mergerequests.list(state='opened', per_page=self.get_config('mr_limit')):
-                mr = project.mergerequests.get(list_mr.get_id())
-                mrs[name].append(GitlabMR(project, mr))
+            filters = self.get_config('filters', {})
+            if 'usernames' in filters and len(filters['usernames']) > 0:
+                mr_limit = self.get_config('mr_limit')
+                for list_mr in project.mergerequests.list(state='opened', per_page=100):
+                    if mr_limit == 0:
+                        break
+                    if list_mr.author.get('username', None) in filters['usernames']:
+                        mr = project.mergerequests.get(list_mr.get_id())
+                        mrs[name].append(GitlabMR(project, mr))
+                        mr_limit -= 1
+            else:
+                for list_mr in project.mergerequests.list(state='opened', per_page=self.get_config('mr_limit')):
+                    mr = project.mergerequests.get(list_mr.get_id())
+                    mrs[name].append(GitlabMR(project, mr))
 
         return mrs
 
