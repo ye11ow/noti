@@ -46,7 +46,14 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
         "project_id": [],
 
         // [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
-        "host": ""
+        "host": "",
+
+        // [Optional] Filters
+        "filters": {
+            
+            // [Optional] Filter by the usernames
+            "usernames": []
+        }
     },
 
     // Github related configurations
