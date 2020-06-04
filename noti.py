@@ -307,15 +307,30 @@ class Github(VCS):
     def get_mrs(self):
         mrs = {}
 
+        filters = self.get_config('filters', {})
+
+        # If any filter is set, we need to get all the PRs and filter them locally
+        if 'usernames' in filters and len(filters['usernames']) > 0:
+            self._gh.per_page = 100
+
         for repo_name in self.get_config('repo', []):
             mrs[repo_name] = []
             repo = self._gh.get_repo(repo_name)
+            mr_limit = self.get_config('mr_limit')
 
             # Here we only get the first page.
             # Github supports page size up to 100 and it is more than enough for us
             pulls = repo.get_pulls(state='open', sort='created', base='master').get_page(0)
             for pr in pulls:
-                mrs[repo_name].append(GithubPR(repo, pr))
+                if 'usernames' in filters and len(filters['usernames']) > 0:
+                    if mr_limit == 0:
+                        break
+                    if pr.user.login in filters['usernames']:
+                        mrs[repo_name].append(GithubPR(repo, pr))
+                        mr_limit -= 1
+                else:
+                    # The mr_limit is handled by the Github side
+                    mrs[repo_name].append(GithubPR(repo, pr))
 
         return mrs
 

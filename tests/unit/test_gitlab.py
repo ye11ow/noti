@@ -13,7 +13,7 @@ def build_mr_with_username(username):
 
 class TestGitlab:
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def config(self):
         return {
             "token": "fake",
@@ -21,8 +21,16 @@ class TestGitlab:
             "host": "https://example.com",
             "mr_limit": 5
         }
+    
+    @pytest.fixture
+    def wrong_config(self):
+        return {
+            "token": "",
+            "project_id": [1],
+            "host": ""
+        }
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def config_with_filter(self):
         return {
             "token": "fake",
@@ -38,14 +46,9 @@ class TestGitlab:
         g = Gitlab(config)
         assert g != None
 
-    def test_init_with_wrong_config(self):
-        config = {
-            "token": "",
-            "project_id": [1],
-            "host": ""
-        }
+    def test_init_with_wrong_config(self, wrong_config):
         with pytest.raises(NotiError):
-            g = Gitlab(config)
+            g = Gitlab(wrong_config)
 
     @patch('gitlab.Gitlab')
     def test_get_mrs(self, mock_gl, config):
@@ -66,7 +69,11 @@ class TestGitlab:
     def test_get_mrs_with_filter(self, mock_gl, config_with_filter):
         project = MagicMock()
         mock_gl.return_value.projects.get.return_value = project
-        project.mergerequests.list.return_value = [build_mr_with_username('test1'), build_mr_with_username('test2'),  build_mr_with_username('test3')]
+        project.mergerequests.list.return_value = [
+            build_mr_with_username('test1'), 
+            build_mr_with_username('test2'),  
+            build_mr_with_username('test3')
+        ]
         project.attributes.get.return_value = 'test_repo'
 
         g = Gitlab(config_with_filter)
