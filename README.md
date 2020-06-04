@@ -51,7 +51,7 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
         // [Optional] Filters
         "filters": {
             
-            // [Optional] Filter by the usernames
+            // [Optional] Filter by the usernames. The username here is the @ ID
             "usernames": []
         }
     },
@@ -65,7 +65,14 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
         "repo": [],
 
         // [Optional] The host of the github server. Leave it empty to use the public Github server.
-        "host": ""
+        "host": "",
+
+        // [Optional] Filters
+        "filters": {
+            
+            // [Optional] Filter by the usernames. The username here is the ID. e.g. https://github.com/ye11ow ye11ow is the username.
+            "usernames": []
+        }
     },
 
     // Customize the emoji

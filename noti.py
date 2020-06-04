@@ -123,7 +123,10 @@ class NotiConfig:
             # [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
             'host': '',
 
+            # [Optional] Filters
             'filters': {
+
+                # [Optional] Filter by the usernames. The username here is the @ ID
                 'usernames': []
             }
         },
@@ -137,7 +140,13 @@ class NotiConfig:
             'repo': [''],
 
             # [Optional] The host of the github server. Leave it empty to use the public Github server.
-            'host': ''
+            'host': '',
+
+            # [Optional] Filters
+            "filters": {
+                # [Optional] Filter by the usernames. The username here is the ID. e.g. https://github.com/ye11ow ye11ow is the username.
+                "usernames": []
+            }
         },
 
         # Shared configurations
