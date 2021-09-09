@@ -1,3 +1,7 @@
+# DEPRECATED BRANCH
+
+This `bitbar` branch is the legacy branch for the original bitbar support. Since bitbar was official replaced by the [xbar](https://github.com/matryer/xbar-plugins), this branch will be no longer maintained.
+
 # Noti
 
 [![Build Status](https://travis-ci.org/ye11ow/noti.svg?branch=master)](https://travis-ci.org/ye11ow/noti)
