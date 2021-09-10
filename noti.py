@@ -1,14 +1,14 @@
 #!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
 #
-# <bitbar.title>Noti</bitbar.title>
-# <bitbar.version>v0.1</bitbar.version>
-# <bitbar.author>ye11ow</bitbar.author>
-# <bitbar.author.github>ye111111ow</bitbar.author.github>
-# <bitbar.desc>Show the status of merge requests</bitbar.desc>
-# <bitbar.image></bitbar.image>
-# <bitbar.dependencies>python</bitbar.dependencies>
-# <bitbar.abouturl>https://github.com/ye11ow/noti</bitbar.abouturl>
+# <xbar.title>Noti</xbar.title>
+# <xbar.version>v0.1</xbar.version>
+# <xbar.author>ye11ow</xbar.author>
+# <xbar.author.github>ye111111ow</xbar.author.github>
+# <xbar.desc>Show the status of merge requests</xbar.desc>
+# <xbar.image></xbar.image>
+# <xbar.dependencies>python</xbar.dependencies>
+# <xbar.abouturl>https://github.com/ye11ow/noti</xbar.abouturl>
 
 import sys
 import json
@@ -155,7 +155,7 @@ class NotiConfig:
             'mr_limit': 10,
         },
 
-        'bitbar': {
+        'emoji': {
             'good_day': '😃',
             'approved': '👍',
             'running': '🏃',
@@ -183,8 +183,8 @@ class NotiConfig:
         return {**self._shared_config, **self.user_config.get(vcs)}
     
     @property
-    def bitbar_config(self):
-        return {**self.DEFAULT_CONFIG.get('bitbar'), **self.user_config.get('bitbar', {})}
+    def emoji_config(self):
+        return {**self.DEFAULT_CONFIG.get('emoji'), **self.user_config.get('emoji', {})}
 
 class NotiError(Exception):
     def __init__(self, vcs, message, help_link=None):
@@ -329,7 +329,7 @@ class Github(VCS):
 
             # Here we only get the first page.
             # Github supports page size up to 100 and it is more than enough for us
-            pulls = repo.get_pulls(state='open', sort='created', base='master').get_page(0)
+            pulls = repo.get_pulls(state='open', sort='created', base='main').get_page(0)
             for pr in pulls:
                 if 'usernames' in filters and len(filters['usernames']) > 0:
                     if mr_limit == 0:
@@ -415,7 +415,7 @@ class GithubComment(Review):
 
 class BitbarPrinter:
 
-    _default_config = 'Configure noti | bash="vi $HOME/.noticonfig.json"'
+    _default_config = 'Configure noti | bash="vi $HOME/.noticonfig.json" terminal=true'
 
     def __init__(self, conf):
         self._conf = conf
@@ -486,18 +486,23 @@ class BitbarPrinter:
             sub_text += '-----\n'
             sub_text += f"--Discussions ({self.time_diff(mr.reviews[0].created_at)})\n"
 
+            shorts = []
             for review in mr.reviews:
                 firstname = review.author.split(' ')[0]
                 short = review.body.replace('-', '').replace('\n', '').replace('\r', '')
                 short = short[:32]
-                sub_text += f"--{firstname}: {short} | href={review.url}\n"
-
-        if len(mr.reviews) == 0:
-            title = f"{mr.branch} {title}"
-        else:
+                shorts.append(f"--{firstname}: {short} | href={review.url}")
+            
+            sub_text += '\n'.join(shorts)
             title = f"{mr.branch} {self._conf.get('comments')}{len(mr.reviews)} {title}"
-
-        self._items.append(f"{title}\n\n\n{sub_text}")
+        else:
+            title = f"{mr.branch} {title}"
+            
+        if len(sub_text) > 0:
+            self._items.append(f"{title}\n{sub_text}")
+        else:
+            self._items.append(title)
+        
         self._items.append(f"{mr.title} | color=white alternate=true")
 
     def generate_title(self, mrs):
@@ -601,7 +606,7 @@ def main(registry, conf, bp):
 
 if __name__ == "__main__":
     conf = NotiConfig()
-    bp = BitbarPrinter(conf.bitbar_config)
+    bp = BitbarPrinter(conf.emoji_config)
     registry = [Gitlab, Github]
 
     main(registry, conf, bp)

@@ -76,7 +76,7 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
     },
 
     // Customize the emoji
-    "bitbar": {
+    "emoji": {
 
         // Show on the title when there isn't any status
         "good_day": "😃",

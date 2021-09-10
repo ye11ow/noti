@@ -62,7 +62,7 @@ class TestGithub:
 
         assert len(mrs['_repo_']) == 3
         mock_gh.return_value.get_repo.assert_called_with('_repo_')
-        repo.get_pulls.assert_called_with(state='open', sort='created', base='master')
+        repo.get_pulls.assert_called_with(state='open', sort='created', base='main')
 
     @patch('github.Github')
     def test_get_mrs_with_filter(self, mock_gh, config_with_filter):
@@ -79,4 +79,4 @@ class TestGithub:
 
         assert len(mrs['_repo_']) == 2
         mock_gh.return_value.get_repo.assert_called_with('_repo_')
-        repo.get_pulls.assert_called_with(state='open', sort='created', base='master')
+        repo.get_pulls.assert_called_with(state='open', sort='created', base='main')

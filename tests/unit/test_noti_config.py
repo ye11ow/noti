@@ -59,15 +59,15 @@ class TestNotiConfig:
         assert config.get('mr_limit') == 10
         assert config.get('hello') == 'world'
 
-    def test_bitbar_config(self):
+    def test_emoji_config(self):
         conf = create_tempfile('''
         {
-            "bitbar": {
+            "emoji": {
                 "running": "_running_"
             }
         }
         ''')
 
-        bitbar = conf.bitbar_config
-        assert bitbar.get('running') == '_running_'
-        assert bitbar.get('failed') == NotiConfig.DEFAULT_CONFIG.get('bitbar').get('failed')
+        emoji = conf.emoji_config
+        assert emoji.get('running') == '_running_'
+        assert emoji.get('failed') == NotiConfig.DEFAULT_CONFIG.get('emoji').get('failed')

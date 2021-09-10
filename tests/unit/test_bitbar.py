@@ -62,7 +62,7 @@ class TestBitbarPrinter:
 
     @pytest.fixture
     def bp(self):
-        return BitbarPrinter(NotiConfig.DEFAULT_CONFIG.get('bitbar'))
+        return BitbarPrinter(NotiConfig.DEFAULT_CONFIG.get('emoji'))
 
     def test_time_diff(self, bp):
         before = datetime.now().astimezone(tzlocal()) - timedelta(minutes=30)
@@ -93,7 +93,7 @@ class TestBitbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json"\n'
+        assert out == 'MYTITLE\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json" terminal=true\n'
         
     def test_print_with_items(self, bp):
         bp.title('MYTITLE')
@@ -102,7 +102,7 @@ class TestBitbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json"\n'
+        assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json" terminal=true\n'
         
     def test_fatal(self, bp):
         with pytest.raises(SystemExit):
@@ -114,7 +114,7 @@ class TestBitbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | bash="vi $HOME/.noticonfig.json"\n'
+        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | bash="vi $HOME/.noticonfig.json" terminal=true\n'
 
     def test_generate_title_no_mr(self, bp):
         bp.generate_title({})
@@ -139,7 +139,7 @@ class TestBitbarPrinter:
 
         bp.generate_mr(mr)
 
-        assert bp._items[0] == 'mybranch  👍 | href=myurl color=green\n\n\n'
+        assert bp._items[0] == 'mybranch  👍 | href=myurl color=green'
         assert bp._items[1] == 'mytitle | color=white alternate=true'
 
     def test_generate_mr_with_reviews_and_failed_job(self, bp):
@@ -156,5 +156,5 @@ class TestBitbarPrinter:
         bp.generate_mr(mr)
 
         # TODO: improve the assertion here to cover reviews output
-        assert bp._items[0].startswith('mybranch 💬1  | href=myurl color=red\n\n\n--Failed jobs\n--name1 | color=red href=url1\n')
+        assert bp._items[0].startswith('mybranch 💬1  | href=myurl color=red\n--Failed jobs\n--name1 | color=red href=url1')
         assert bp._items[1] == 'mytitle | color=white alternate=true'
