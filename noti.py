@@ -1,87 +1,248 @@
 #!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
 #
-# <bitbar.title>Noti</bitbar.title>
-# <bitbar.version>v0.1</bitbar.version>
-# <bitbar.author>ye11ow</bitbar.author>
-# <bitbar.author.github>ye111111ow</bitbar.author.github>
-# <bitbar.desc>Show the status of merge requests</bitbar.desc>
-# <bitbar.image></bitbar.image>
-# <bitbar.dependencies>python</bitbar.dependencies>
-# <bitbar.abouturl>https://github.com/ye11ow/noti</bitbar.abouturl>
+# <xbar.title>Noti</xbar.title>
+# <xbar.version>v0.1</xbar.version>
+# <xbar.author>ye11ow</xbar.author>
+# <xbar.author.github>ye111111ow</xbar.author.github>
+# <xbar.desc>Show the status of merge requests</xbar.desc>
+# <xbar.image></xbar.image>
+# <xbar.dependencies>python</xbar.dependencies>
+# <xbar.abouturl>https://github.com/ye11ow/noti</xbar.abouturl>
 
 import sys
 import json
 from pathlib import Path
 from datetime import datetime
 
-# Put your personal configuration here
-DEFAULT_CONFIG = {
-    # Gitlab related configurations
-    'gitlab': {
-        # Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
-        'token': '',
+class VCS:
 
-        # Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
-        'project_id': [],
+    def __init__(self, config, default_host):
+        self._config = config
+        self._default_host = default_host
 
-        # The host of the gitlab server. e.g. https://gitlab.example.com
-        'host': '',
-    },
+    def get_config(self, item, default_value=None):
+        return self._config.get(item, default_value)
 
-    # Github related configurations
-    'github': {
-        'token': '',
-        'repo': ['']
+    @property
+    def name(cls):
+        raise NotImplementedError
+
+    @property
+    def token(self):
+        token = self.get_config('token', '')
+        if len(token) == 0:
+            raise NotiError(self.name, 'Wrong configuration: Please make sure you have the right token')
+
+        return token
+
+    @property
+    def host(self):
+        host = self.get_config('host', '')
+        if len(host) == 0:
+            host = self._default_host
+        
+        return host
+
+    def get_mrs(self):
+        raise NotImplementedError
+
+class Review:
+
+    def __init__(self, author, created_at, body, url):
+        self._author = author
+        self._created_at = created_at
+        self._body = body
+        self._url = url
+
+    @property
+    def author(self):
+        return self._author
+
+    @property
+    def created_at(self):
+        return self._created_at
+
+    @property
+    def body(self):
+        return self._body
+
+    @property
+    def url(self):
+        return self._url
+
+class MR:
+
+    def __init__(self, title, url, branch, ci_status=None):
+        self._title = title
+        self._ci_status = ci_status
+        self._url = url
+        self._branch = branch
+
+    @property
+    def title(self):
+        return self._title
+    
+    @property
+    def ci_status(self):
+        return self._ci_status
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def branch(self):
+        return self._branch
+
+class CIJob:
+
+    def __init__(self, name, url):
+        self._name = name
+        self._url = url
+    
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def url(self):
+        return self._url
+
+class NotiConfig:
+
+    DEFAULT_CONFIG = {
+        # Gitlab related configurations
+        'gitlab': {
+            # Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
+            'token': '',
+
+            # Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
+            'project_id': [],
+
+            # [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
+            'host': '',
+
+            # [Optional] Filters
+            'filters': {
+
+                # [Optional] Filter by the usernames. The username here is the @ ID
+                'usernames': []
+            }
+        },
+
+        # Github related configurations
+        'github': {
+            # Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
+            'token': '',
+
+            # The name of the repo, e.g. "ye11ow/noti"
+            'repo': [''],
+
+            # [Optional] The host of the github server. Leave it empty to use the public Github server.
+            'host': '',
+
+            # [Optional] Filters
+            "filters": {
+                # [Optional] Filter by the usernames. The username here is the ID. e.g. https://github.com/ye11ow ye11ow is the username.
+                "usernames": []
+            }
+        },
+
+        # Shared configurations
+        'global': {
+            # Max number of MRs that will be shown on the list
+            'mr_limit': 10,
+        },
+
+        'emoji': {
+            'good_day': '😃',
+            'approved': '👍',
+            'running': '🏃',
+            'failed': '🙃',
+            'comments': '💬'
+        }
     }
-}
+
+    def __init__(self, path=None):
+        if not path:
+            path = Path(Path.home(), ".noticonfig.json")
+        self.conf_path = path
+
+        if not self.conf_path.exists():
+            self.conf_path.write_text(json.dumps(self.DEFAULT_CONFIG, indent=4))
+
+        self._user_config = json.loads(self.conf_path.read_text())
+        self._shared_config = self.DEFAULT_CONFIG.get('global')
+
+    @property
+    def user_config(self):
+        return self._user_config
+
+    def get_config(self, vcs):
+        return {**self._shared_config, **self.user_config.get(vcs)}
+    
+    @property
+    def emoji_config(self):
+        return {**self.DEFAULT_CONFIG.get('emoji'), **self.user_config.get('emoji', {})}
 
 class NotiError(Exception):
-    def __init__(self, title, message):
-        self.title = title
+    def __init__(self, vcs, message, help_link=None):
+        self.vcs = vcs
         self.message = message
+        self.help_link = help_link
 
-class Gitlab:
+class Gitlab(VCS):
+    
+    name = 'Gitlab'
+
     def __init__(self, config):
+        super().__init__(config, 'https://gitlab.com')
+        
         try:
             import gitlab
         except:
-            raise NotiError('Missing dependencies', 'You need to install python-gitlab | href=https://python-gitlab.readthedocs.io/en/stable/install.html')
+            raise NotiError(self.name, 'Missing dependencies: You need to install python-gitlab', 'https://python-gitlab.readthedocs.io/en/stable/install.html')
 
-        self._config = config.get('gitlab', {})
-
-        host = self._config.get('host', '')
-        token = self._config.get('token', '')
-        if len(host) + len(token) == 0:
-            raise NotiError('Wrong Gitlab configuration', 'Please make sure you have the right host and token')
-    
-        self._gl = gitlab.Gitlab(host, private_token=token)
+        self._gl = gitlab.Gitlab(self.host, private_token=self.token)
 
     def get_mrs(self):
-        mrs = []
+        mrs = {}
 
-        for pid in self._config.get('project_id'):
+        for pid in self.get_config('project_id', []):
             project = self._gl.projects.get(pid)
-            for list_mr in project.mergerequests.list(state='opened'):
-                mr = project.mergerequests.get(list_mr.get_id())
-                mrs.append(GitlabMR(project, mr))
+            name = project.attributes.get('name')
+            mrs[name] = []
+            filters = self.get_config('filters', {})
+            if 'usernames' in filters and len(filters['usernames']) > 0:
+                mr_limit = self.get_config('mr_limit')
+                for list_mr in project.mergerequests.list(state='opened', per_page=100):
+                    if mr_limit == 0:
+                        break
+                    if list_mr.author.get('username', None) in filters['usernames']:
+                        mr = project.mergerequests.get(list_mr.get_id())
+                        mrs[name].append(GitlabMR(project, mr))
+                        mr_limit -= 1
+            else:
+                for list_mr in project.mergerequests.list(state='opened', per_page=self.get_config('mr_limit')):
+                    mr = project.mergerequests.get(list_mr.get_id())
+                    mrs[name].append(GitlabMR(project, mr))
 
         return mrs
 
-class GitlabMR:
+class GitlabMR(MR):
     def __init__(self, project, mr):
         self._project = project
         self._mr = mr
 
-    @property
-    def title(self):
-        return self._mr.attributes.get('title')
-        
-    @property
-    def ci_status(self):
-        pipeline = self._mr.attributes.get('pipeline')
-        if pipeline:
-            return pipeline.get('status', None)
+        pipeline = mr.attributes.get('pipeline')
+        ci_status = pipeline.get('status', None) if pipeline else None
+        super().__init__(
+            title=mr.attributes.get('title'),
+            ci_status=ci_status,
+            url=mr.attributes.get('web_url'),
+            branch=mr.attributes.get('source_branch')
+        )
 
     @property
     def failed_pipeline_jobs(self):
@@ -99,18 +260,6 @@ class GitlabMR:
             self._approved = self._mr.approvals.get().attributes.get('approved')
 
         return self._approved
-
-    @property
-    def url(self):
-        return self._mr.attributes.get('web_url')
-
-    @property
-    def branch(self):
-        return self._mr.attributes.get('source_branch')
-
-    @property
-    def has_review(self):
-        return self._mr.attributes.get('user_notes_count', -1) > 0
 
     # return unresolved, non-system notes only
     @property
@@ -132,72 +281,78 @@ class GitlabMR:
 
         return self._reviews
 
-class PipelineJob:
+class PipelineJob(CIJob):
+    
     def __init__(self, job):
-        self._job = job
+        super().__init__(
+            name=job.attributes.get('name'),
+            url=job.attributes.get('web_url')
+        )
 
-    @property
-    def name(self):
-        return self._job.attributes.get('name')
+class GitlabReview(Review):
 
-    @property
-    def url(self):
-        return self._job.attributes.get('web_url')
-
-class GitlabReview:
     def __init__(self, mr, review):
-        self._mr = mr
-        self._review = review
+        super().__init__(
+            author=review.attributes.get('author')['name'],
+            created_at=parser.parse(review.attributes.get('created_at')).astimezone(tzlocal()),
+            body=review.attributes.get('body'),
+            url=f"{mr.url}#note_{review.get_id()}"
+        )
 
-    @property
-    def author(self):
-        return self._review.attributes.get('author')['name']
+class Github(VCS):
 
-    @property
-    def created_at(self):
-        return parser.parse(self._review.attributes.get('created_at')).astimezone(tzlocal())
+    name = 'Github'
 
-    @property
-    def body(self):
-        return self._review.attributes.get('body')
-
-    @property
-    def url(self):
-        return f"{self._mr.url}#note_{self._review.get_id()}"
-
-class Github:
     def __init__(self, config):
+        super().__init__(config, 'https://api.github.com')
+
         try:
-            from github import Github as GH
+            import github
         except:
-            raise NotiError('Missing dependencies', 'You need to install PyGithub | href=https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
+            raise NotiError(self.name, 'Missing dependencies: You need to install PyGithub', 'https://pygithub.readthedocs.io/en/latest/introduction.html#download-and-install')
 
-        self._config = config.get('github', {})
-        token = self._config.get('token', '')
-        if len(token) == 0:
-            raise NotiError('Wrong Github configuration', 'Please make sure you have the right token')
-
-        self._gh = GH(token)
+        self._gh = github.Github(self.token, base_url=self.host, per_page=self.get_config('mr_limit'))
 
     def get_mrs(self):
-        mrs = []
+        mrs = {}
 
-        for repo_name in self._config.get('repo'):
+        filters = self.get_config('filters', {})
+
+        # If any filter is set, we need to get all the PRs and filter them locally
+        if 'usernames' in filters and len(filters['usernames']) > 0:
+            self._gh.per_page = 100
+
+        for repo_name in self.get_config('repo', []):
+            mrs[repo_name] = []
             repo = self._gh.get_repo(repo_name)
-            pulls = repo.get_pulls(state='open', sort='created', base='master')
+            mr_limit = self.get_config('mr_limit')
+
+            # Here we only get the first page.
+            # Github supports page size up to 100 and it is more than enough for us
+            pulls = repo.get_pulls(state='open', sort='created', base='main').get_page(0)
             for pr in pulls:
-                mrs.append(GithubPR(repo, pr))
+                if 'usernames' in filters and len(filters['usernames']) > 0:
+                    if mr_limit == 0:
+                        break
+                    if pr.user.login in filters['usernames']:
+                        mrs[repo_name].append(GithubPR(repo, pr))
+                        mr_limit -= 1
+                else:
+                    # The mr_limit is handled by the Github side
+                    mrs[repo_name].append(GithubPR(repo, pr))
 
         return mrs
 
-class GithubPR:
+class GithubPR(MR):
     def __init__(self, repo, pr):
         self._repo = repo
         self._pr = pr
 
-    @property
-    def title(self):
-        return self._pr.title
+        super().__init__(
+            title=pr.title,
+            url=pr.html_url,
+            branch=pr.head.ref
+        )
 
     @property
     def ci_status(self):
@@ -205,6 +360,10 @@ class GithubPR:
             sha = self._pr.head.sha
             self._status = self._repo.get_commit(sha).get_combined_status()
         
+        # The `state` will be pending even if there is no `statuses`
+        if len(self._status.statuses) == 0:
+            return ''
+
         state = self._status.state
         if state == 'pending':
             return 'running'
@@ -226,18 +385,6 @@ class GithubPR:
         return self._pr.mergeable
 
     @property
-    def url(self):
-        return self._pr.html_url
-
-    @property
-    def branch(self):
-        return self._pr.head.ref
-
-    @property
-    def has_review(self):
-        return self._pr.comments > 0
-
-    @property
     def reviews(self):
         if not hasattr(self, '_comments'):
             comments = []
@@ -248,56 +395,71 @@ class GithubPR:
 
         return self._comments
 
-class TravisBuild:
+class TravisBuild(CIJob):
+
     def __init__(self, build):
-        self._build = build
+        super().__init__(
+            name=build.context,
+            url=build.target_url
+        )
 
-    @property
-    def name(self):
-        return self._build.context
-
-    @property
-    def url(self):
-        return self._build.target_url
-
-class GithubComment:
+class GithubComment(Review):
+    
     def __init__(self, comment):
-        self._comment = comment
-
-    @property
-    def author(self):
-        return self._comment.user.login
-
-    @property
-    def created_at(self):
-        return self._comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal())
-
-    @property
-    def body(self):
-        return self._comment.body
-
-    @property
-    def url(self):
-        return self._comment.html_url
+        super().__init__(
+            author=comment.user.login,
+            created_at=comment.created_at.replace(tzinfo=tzutc()).astimezone(tzlocal()),
+            body=comment.body,
+            url=comment.html_url
+        )
 
 class BitbarPrinter:
-    def __init__(self):
-        pass
 
-    def print_config(self):
-        print('---\n')
-        print('Configure noti | bash="vi $HOME/.noticonfig.json"')
+    _default_config = 'Configure noti | bash="vi $HOME/.noticonfig.json" terminal=true'
+
+    def __init__(self, conf):
+        self._conf = conf
+        self._title = ''
+        self._items = []
+        self._configs = [self._default_config]
+
+    def title(self, title):
+        self._title = title    
     
-    def print_error(self, title, extra):
-        print(title)
-        print('---\n')
-        if extra:
-            print(extra)
-            print('\n')
-        bp.print_config()
+    def add_repo(self, item):
+        self._items.append(item)
+
+    def print(self):
+        print(self._title)
+
+        if len(self._items) > 0:
+            print('---')
+            for item in self._items:
+                print(item)
+            
+        if len(self._configs) > 0:
+            print('---')
+            for config in self._configs:
+                print(config)
+
+    def add_error(self, title):
+        self._configs.insert(0, f"{title} | color=red")
+    
+    @classmethod
+    def fatal(cls, message, help_link=None):
+        print('Noti Error | color=red')
+        print('---')
+
+        if help_link is not None:
+            message += ' | color=red href=' + help_link
+        print(message)
+
+        print('---')
+        print(cls._default_config)
+
         exit(1)
 
-    def print_mr(self, mr):
+    def generate_mr(self, mr):
         pipeline_color_map = {
             'success': 'green',
             'failed': 'red',
@@ -306,12 +468,13 @@ class BitbarPrinter:
 
         title = ''
         if mr.approved:
-            title += ' 👍'
+            title += ' ' + self._conf.get('approved')
         title += f" | href={mr.url}"
 
         sub_text = ''
 
         # pipeline field will be empty if it is cancelled
+        color = ''
         if mr.ci_status in pipeline_color_map:
             title += f" color={pipeline_color_map[mr.ci_status]}"
             if mr.ci_status == 'failed':
@@ -323,21 +486,26 @@ class BitbarPrinter:
             sub_text += '-----\n'
             sub_text += f"--Discussions ({self.time_diff(mr.reviews[0].created_at)})\n"
 
+            shorts = []
             for review in mr.reviews:
                 firstname = review.author.split(' ')[0]
                 short = review.body.replace('-', '').replace('\n', '').replace('\r', '')
                 short = short[:32]
-                sub_text += f"--{firstname}: {short} | href={review.url}\n"
-
-        if len(mr.reviews) == 0:
-            title = f"{mr.branch} {title}"
+                shorts.append(f"--{firstname}: {short} | href={review.url}")
+            
+            sub_text += '\n'.join(shorts)
+            title = f"{mr.branch} {self._conf.get('comments')}{len(mr.reviews)} {title}"
         else:
-            title = f"{mr.branch} 💬{len(mr.reviews)} {title}"
+            title = f"{mr.branch} {title}"
+            
+        if len(sub_text) > 0:
+            self._items.append(f"{title}\n{sub_text}")
+        else:
+            self._items.append(title)
+        
+        self._items.append(f"{mr.title} | color=white alternate=true")
 
-        print(f"{title}\n\n\n{sub_text}")
-        print(f"{mr.title} | alternate=true")
-
-    def print_title(self, mrs):
+    def generate_title(self, mrs):
         statistics = {
             'approved': 0,
             'failed': 0,
@@ -345,20 +513,21 @@ class BitbarPrinter:
             'comments': 0
         }
         pipeline_icon_map = {
-            'failed': '🙃',
-            'running': '🏃',
-            'comments': '💬',
-            'approved': '👍'
+            'failed': self._conf.get('failed'),
+            'running': self._conf.get('running'),
+            'comments': self._conf.get('comments'),
+            'approved': self._conf.get('approved')
         }
 
-        for mr in mrs:
-            statistics['comments'] += len(mr.reviews)
+        for key, value in mrs.items():
+            for mr in value:
+                statistics['comments'] += len(mr.reviews)
 
-            if mr.approved:
-                statistics['approved'] += 1
+                if mr.approved:
+                    statistics['approved'] += 1
 
-            if mr.ci_status in statistics:
-                statistics[mr.ci_status] += 1
+                if mr.ci_status in statistics:
+                    statistics[mr.ci_status] += 1
 
         title = ''
         for key in statistics:
@@ -366,55 +535,78 @@ class BitbarPrinter:
                 title += pipeline_icon_map[key] + str(statistics[key])
 
         if len(title) == 0:
-            title = f"{len(mrs)} MRs"
+            title = self._conf.get('good_day')
 
-        print(title)
-        print('---\n')
+        self.title(title)
 
     def time_diff(self, before):
-        diff = (datetime.now().astimezone(tzlocal()) - before).seconds
+        diff = (datetime.now().astimezone(tzlocal()) - before)
+        seconds = diff.seconds
+        days = diff.days
 
-        hours = int(diff/3600)
+        days_text = ''
+        if days > 365:
+            return 'long long ago'
+        elif days > 7:
+            return f"{days} days ago"
+
+        hours = int(seconds/3600)
         hours_text = ''
         if hours > 0:
-            hours_text = f"{hours} hours "
-        minutes = int(diff%3600/60)
+            hours_text = f"{hours} hours"
 
+        if days > 1:
+            return f"{days} days {hours_text} ago"
+
+        if hours > 0:
+            hours_text += ' '
+
+        minutes = int(seconds%3600/60)
         return f"{hours_text}{minutes} minutes ago"
-
-bp = BitbarPrinter()
 
 try:
     from dateutil import parser
     from dateutil.tz import tzlocal
     from dateutil.tz import tzutc
 except:
-    bp.print_error('Missing dependencies', 'You need to install python-dateutil | href=https://dateutil.readthedocs.io/en/stable/#installation')
+    BitbarPrinter.fatal('Missing dependencies: You need to install python-dateutil', 'https://dateutil.readthedocs.io/en/stable/#installation')
 
-if __name__== "__main__":
-    config_path = Path(Path.home(), ".noticonfig.json")
-    user_config = {}
-    if not config_path.exists():
-        config_path.write_text(json.dumps(DEFAULT_CONFIG, indent=4))
+def main(registry, conf, bp):
+    vcs = []
+    for s in registry:
+        key = s.name.lower()
+        if key in conf.user_config:
+            try:
+                vcs.append(s(conf.get_config(key)))
+            except NotiError as e:
+                bp.fatal(f"[{e.vcs}] {e.message}", e.help_link)
 
-    user_config = json.loads(config_path.read_text())
-    config = {**DEFAULT_CONFIG, **user_config}
+    if len(vcs) == 0:
+        bp.fatal('You have to configure either gitlab or github')        
 
-    vcs = None
-    try:
-        if 'gitlab' in user_config:
-            vcs = Gitlab(config)
-        elif 'github' in user_config:
-            vcs = Github(config)
-    except NotiError as err:
-        bp.print_error(err.title, err.message)
-        
-    try:
-        mrs = vcs.get_mrs()
-    except:
-        bp.print_error("failed to connect to the server", None)
-        
-    bp.print_title(mrs)
-    for mr in mrs:
-        bp.print_mr(mr)
-    bp.print_config()
+    mrs = {}
+
+    from requests.exceptions import ConnectionError
+    for v in vcs:
+        try:
+            mrs.update(v.get_mrs())   
+        except ConnectionError:
+            bp.add_error(f"{v.name}: failed to connect to the server")
+
+    bp.generate_title(mrs)
+    for repo_name, repo_mrs in mrs.items():
+        if len(repo_mrs) == 0:
+            continue
+
+        bp.add_repo(repo_name)
+        for mr in repo_mrs:
+            bp.generate_mr(mr)
+
+    bp.print()
+
+if __name__ == "__main__":
+    conf = NotiConfig()
+    bp = BitbarPrinter(conf.emoji_config)
+    registry = [Gitlab, Github]
+
+    main(registry, conf, bp)

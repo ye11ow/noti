@@ -2,39 +2,28 @@ from unittest.mock import MagicMock
 import pytest
 
 from noti import GitlabReview
+from fixtures import gitlab as mock
 
 class TestGitlabReview:
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture
     def review(self):
-        return GitlabReview(MagicMock(), MagicMock())
+        mockMR = MagicMock()
+        mockMR.url = '_url_'
+        return GitlabReview(mockMR, mock.DummyReview())
 
     def test_author(self, review):
-        review._review.attributes.get.return_value = {
-            'name': 'myauthor'
-        }
-
-        assert review.author == 'myauthor'
-        review._review.attributes.get.assert_called_with('author')
+        assert review.author == '_author_'
 
     def test_created_at(self, review):
-        review._review.attributes.get.return_value = '2013-09-30T13:46:01Z'
-
         created_at = review.created_at
         
-        assert created_at.year == 2013
-        assert created_at.month == 9
-        assert created_at.day == 30
-        review._review.attributes.get.assert_called_with('created_at')
+        assert created_at.year == 2020
+        assert created_at.month == 2
+        assert created_at.day == 2
 
-    def test_body(self, review):
-        review._review.attributes.get.return_value = 'mybody'
-        
-        assert review.body == 'mybody'
-        review._review.attributes.get.assert_called_with('body')
+    def test_body(self, review):        
+        assert review.body == '_body_'
 
     def test_url(self, review):
-        review._review.get_id.return_value = '1234567'
-        review._mr.url = 'https://example.com/mr'
-
-        assert review.url == 'https://example.com/mr#note_1234567'
+        assert review.url == '_url_#note__id_'
