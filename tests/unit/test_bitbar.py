@@ -93,7 +93,7 @@ class TestBitbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json" terminal=true\n'
+        assert out == 'MYTITLE\n---\nConfigure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true\n'
         
     def test_print_with_items(self, bp):
         bp.title('MYTITLE')
@@ -102,7 +102,7 @@ class TestBitbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | bash="vi $HOME/.noticonfig.json" terminal=true\n'
+        assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true\n'
         
     def test_fatal(self, bp):
         with pytest.raises(SystemExit):
@@ -114,7 +114,7 @@ class TestBitbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | bash="vi $HOME/.noticonfig.json" terminal=true\n'
+        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true\n'
 
     def test_generate_title_no_mr(self, bp):
         bp.generate_title({})
