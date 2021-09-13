@@ -415,7 +415,7 @@ class GithubComment(Review):
 
 class BitbarPrinter:
 
-    _default_config = 'Configure noti | bash="vi $HOME/.noticonfig.json" terminal=true'
+    _default_config = 'Configure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true'
 
     def __init__(self, conf):
         self._conf = conf

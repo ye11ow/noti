@@ -12,7 +12,7 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
     * <font color="blue">Blue</font>: Job is running
     * <font color="red">Red</font>: Job failed
 * Emojis:
-    * 👍: Pull request is approved
+    * 👍: Pull request is approved (or approval is optional)
     * 🏃: The CI job is running
     * 🙃: Number of pull requests that failed the CI job
     * 💬: Number of pull reuqest comments
@@ -102,6 +102,7 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
 
 - [X] Gitlab + Gitlab pipeline
 - [X] Github + Travis CI
+- [ ] Github + Github Action
 - [ ] Bitbucket + Bitbucket pipeline
 
 ### Supported GUI
