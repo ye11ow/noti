@@ -26,11 +26,12 @@ class DummyComment:
 
 class DummyPR:
 
-    def __init__(self, comments=[]):
+    def __init__(self, comments=[], mergeable_state='clean'):
         self._head = MagicMock()
         self._head.ref = '_branch_'
         self._head.sha = '_sha_'
         self._comments = comments
+        self._mergeable_state = mergeable_state
 
     def get_comments(self):
         return self._comments
@@ -50,6 +51,10 @@ class DummyPR:
     @property
     def mergeable(self):
         return True
+
+    @property
+    def mergeable_state(self):
+        return self._mergeable_state
 
 class DummyBuild:
 

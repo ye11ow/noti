@@ -41,6 +41,10 @@ class TestGithubPR:
     def test_approved(self, default_pr):
         assert default_pr.approved
 
+    def test_not_approved(self):
+        pr = GithubPR(MagicMock(), mock.DummyPR(mergeable_state='blocked'))
+        assert not pr.approved
+
     def test_url(self, default_pr):
         assert default_pr.url == '_url_'
     

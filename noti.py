@@ -380,9 +380,10 @@ class GithubPR(MR):
 
         return self._failed_pipeline_jobs
 
+    # As long as the state is not BLOCKED, we should consider the MR is approved.
     @property
     def approved(self):
-        return self._pr.mergeable
+        return self._pr.mergeable and self._pr.mergeable_state != 'blocked'
 
     @property
     def reviews(self):
