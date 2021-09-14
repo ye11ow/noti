@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 #
 # <xbar.title>Noti</xbar.title>
-# <xbar.version>v0.1</xbar.version>
+# <xbar.version>v0.5</xbar.version>
 # <xbar.author>ye11ow</xbar.author>
-# <xbar.author.github>ye111111ow</xbar.author.github>
-# <xbar.desc>Show the status of merge requests</xbar.desc>
-# <xbar.image></xbar.image>
+# <xbar.author.github>ye11ow</xbar.author.github>
+# <xbar.desc>Show the status of the merge requests</xbar.desc>
+# <xbar.image>https://raw.githubusercontent.com/ye11ow/noti/main/docs/images/Bitbar.png</xbar.image>
 # <xbar.dependencies>python</xbar.dependencies>
 # <xbar.abouturl>https://github.com/ye11ow/noti</xbar.abouturl>
 
-import sys
 import json
 from pathlib import Path
 from datetime import datetime
