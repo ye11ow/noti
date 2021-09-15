@@ -20,17 +20,15 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
 ## Installation
 1. Make sure both `xbar` and `python3` (>=3.6) are installed on your machine.
 
-1. Clone this repo or just download [`noti.py`](https://raw.githubusercontent.com/ye11ow/noti/main/noti.py) and put it under your xbar plugin folder. (You may want to edit the shebang of `noti.py` to make sure it points to the right Python interpreter)
+1. Clone this repo and move `noti.py` to your xbar plugin folder as `noti.{time}.py`. The `{time}` is the refresh interval. For instance, renaming to `noti.30s.py` will lead to a  30 seconds' refresh interval. For detailed instruction, you can refer to https://github.com/matryer/xbar-plugins/blob/main/CONTRIBUTING.md#configure-the-refresh-time.
 
-1. Rename the `noti.py` to `noti.{time}.py`. The `{time}` is the refresh rate. For instance, `noti.30s.py` will refresh the status every 30 seconds. For detailed instruction, you can refer to https://github.com/matryer/xbar#configure-the-refresh-time.
+1. Edit the shebang of `noti.{time}.py` to make sure it points to the right Python interpreter (default `/usr/local/bin/python3`). 
+
+1. Install the python dependencies `/usr/local/bin/python3 -m pip install -r requirements.txt`.
 
 1. Configure noti to connect to your Gitlab or Github. You can either edit the config file under `$HOME/.noticonfig.json` or select `Configure noti` on the dropdown menu. Please refer to the Configurations section for details.
 
-1. Make sure you have the following dependencies installed (depend on which VCS you want to use) and you should be able to see the status on your menubar.
-
-* `pip install python-dateutil` (always install this)
-* `sudo pip install --upgrade python-gitlab` (for Gitlab)
-* `pip install PyGithub` (for Github)
+1. You should be able to see the status on your menubar if everything is setup properly. Enjoy!😃.
 
 ## Configurations
 
@@ -39,10 +37,10 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
 {
     // Gitlab related configurations
     "gitlab": {
-        // Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
+        // [REQUIRED] Go to the "User Settings" -> "Access Tokens" page, create a Personal Access Token with "api" Scopes
         "token": "",
 
-        // Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
+        // [REQUIRED] Go to the home page of the repo, you will find the Project ID under the name of the repo (in grey).
         "project_id": [],
 
         // [Optional] The host of the gitlab server. Leave it empty to use the public Gitlab server.
@@ -51,17 +49,17 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
         // [Optional] Filters
         "filters": {
             
-            // [Optional] Filter by the usernames. The username here is the @ ID
+            // Filter by the usernames. The username here is the @ ID
             "usernames": []
         }
     },
 
     // Github related configurations
     "github": {
-        // Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
+        // [REQUIRED] Go to Github "Settings" -> "Developer settings" -> "Personal access tokens" and "Generate new token" with "repo" scopes
         "token": "",
 
-        // The name of the repo. e.g. "ye11ow/noti"
+        // [REQUIRED] The name of the repo. e.g. "ye11ow/noti"
         "repo": [],
 
         // [Optional] The host of the github server. Leave it empty to use the public Github server.
@@ -70,12 +68,12 @@ Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge re
         // [Optional] Filters
         "filters": {
             
-            // [Optional] Filter by the usernames. The username here is the ID. e.g. https://github.com/ye11ow ye11ow is the username.
+            // Filter by the usernames. The username here is the ID. e.g. https://github.com/ye11ow ye11ow is the username.
             "usernames": []
         }
     },
 
-    // Customize the emoji
+    // [Optional] Customize the emoji
     "emoji": {
 
         // Show on the title when there isn't any status
