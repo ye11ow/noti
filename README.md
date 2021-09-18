@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/ye11ow/noti/actions/workflows/python-app.yml/badge.svg)](https://github.com/ye11ow/noti/actions)
 [![Coverage Status](https://coveralls.io/repos/github/ye11ow/noti/badge.svg?branch=main)](https://coveralls.io/github/ye11ow/noti?branch=main)
 
-Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge requests). It is distributed as a plugin of [xbar](https://xbarapp.com/)(former **bitbar**).
+Noti is a Mac OS X menu bar plugin to show the status of pull requests (merge requests). It is distributed as a plugin of [xbar](https://xbarapp.com/)(former **Bitbar**).
 
 ![Tutorial](https://github.com/ye11ow/noti/blob/main/docs/images/Bitbar.png?raw=true)
 

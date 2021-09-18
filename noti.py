@@ -413,10 +413,48 @@ class GithubComment(Review):
             url=comment.html_url
         )
 
-class BitbarPrinter:
 
-    _default_config = 'Configure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true'
+# Embedded version of Xbar SDK
+class XbarItem:
 
+    def __init__(self, title, params=[]):
+        self._title = title
+        self._params = params
+    
+    def val(self):
+        value = self._title
+        if len(self._params) > 0:
+            value = f"{value} |"
+        
+        for param in self._params:
+            value += f" {param.val()}"
+
+        return value
+
+class XbarParamShell:
+
+    def __init__(self, script, params=[], terminal=False):
+        self._script = script
+        self._params = params
+        self._terminal = terminal
+    
+    def val(self):
+        if self._script.find(" ") >= 0:
+            value = f"shell=\"{self._script}\""
+        else:
+            value = f"shell={self._script}"
+
+        param_index = 1
+        for param in self._params:
+            value += f" param{param_index}={param}"
+        value += f" terminal={str(self._terminal).lower()}"
+
+        return value
+
+class XbarPrinter:
+
+    _default_config = XbarItem("Configure noti", [XbarParamShell("vi", ["$HOME/.noticonfig.json"], True)]).val()
+    
     def __init__(self, conf):
         self._conf = conf
         self._title = ''
@@ -569,7 +607,7 @@ try:
     from dateutil.tz import tzlocal
     from dateutil.tz import tzutc
 except:
-    BitbarPrinter.fatal('Missing dependencies: You need to install python-dateutil', 'https://dateutil.readthedocs.io/en/stable/#installation')
+    XbarPrinter.fatal('Missing dependencies: You need to install python-dateutil', 'https://dateutil.readthedocs.io/en/stable/#installation')
 
 def main(registry, conf, bp):
     vcs = []
@@ -606,7 +644,7 @@ def main(registry, conf, bp):
 
 if __name__ == "__main__":
     conf = NotiConfig()
-    bp = BitbarPrinter(conf.emoji_config)
+    bp = XbarPrinter(conf.emoji_config)
     registry = [Gitlab, Github]
 
     main(registry, conf, bp)

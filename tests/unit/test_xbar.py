@@ -8,7 +8,7 @@ import pytest
 from dateutil.tz import tzlocal
 from dateutil import parser
 
-from noti import BitbarPrinter
+from noti import XbarPrinter
 from noti import NotiConfig
 
 def proxy_print(bp):
@@ -58,11 +58,11 @@ def create_failed_job(name, url):
 
     return job
 
-class TestBitbarPrinter:
+class TestXbarPrinter:
 
     @pytest.fixture
     def bp(self):
-        return BitbarPrinter(NotiConfig.DEFAULT_CONFIG.get('emoji'))
+        return XbarPrinter(NotiConfig.DEFAULT_CONFIG.get('emoji'))
 
     def test_time_diff(self, bp):
         before = datetime.now().astimezone(tzlocal()) - timedelta(minutes=30)
