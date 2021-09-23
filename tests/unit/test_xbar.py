@@ -139,8 +139,8 @@ class TestXbarPrinter:
 
         bp.generate_mr(mr)
 
-        assert bp._items[0] == 'mybranch  👍 | href=myurl color=green'
-        assert bp._items[1] == 'mytitle | color=white alternate=true'
+        assert str(bp._items[0]) == 'mybranch  👍 | href=myurl color=green'
+        assert str(bp._items[1]) == 'mytitle | color=white alternate=true'
 
     def test_generate_mr_with_reviews_and_failed_job(self, bp):
         reviews = [
@@ -156,5 +156,5 @@ class TestXbarPrinter:
         bp.generate_mr(mr)
 
         # TODO: improve the assertion here to cover reviews output
-        assert bp._items[0].startswith('mybranch 💬1  | href=myurl color=red\n--Failed jobs\n--name1 | color=red href=url1')
-        assert bp._items[1] == 'mytitle | color=white alternate=true'
+        assert str(bp._items[0]).startswith('mybranch 💬1  | href=myurl color=red\n--Failed jobs\n--name1 | color=red href=url1')
+        assert str(bp._items[1]) == 'mytitle | color=white alternate=true'

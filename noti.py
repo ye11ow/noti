@@ -417,43 +417,80 @@ class GithubComment(Review):
 # Embedded version of Xbar SDK
 class XbarItem:
 
-    def __init__(self, title, params=[]):
+    def __init__(self, title=""):
         self._title = title
-        self._params = params
+        self._params = []
+        self._color = None
+        self._shell = None
+        self._alt = None
+        self._link = None
     
-    def val(self):
+    def __str__(self):
         value = self._title
-        if len(self._params) > 0:
-            value = f"{value} |"
+
+        if self._shell:
+            self._params.append(self._shell)
+
+        if self._color:
+            self._params.append(self._color) 
         
-        for param in self._params:
-            value += f" {param.val()}"
+        if self._alt:
+            self._params.append(self._alt)
+        
+        if self._link:
+            self._params.append(self._link)
+
+        if len(self._params) > 0:
+            value += " | " 
+            value += " ".join(self._params)
 
         return value
 
-class XbarParamShell:
+    def title(self, title):
+        self._title = title
 
-    def __init__(self, script, params=[], terminal=False):
-        self._script = script
-        self._params = params
-        self._terminal = terminal
-    
-    def val(self):
-        if self._script.find(" ") >= 0:
-            value = f"shell=\"{self._script}\""
+    def color(self, color):
+        if len(color) > 0:
+            self._color = f"color={color}"
         else:
-            value = f"shell={self._script}"
+            self._color = None
+
+        return self
+    
+    def shell(self, script, params=[], terminal=False):
+        if script.find(" ") >= 0:
+            value = f"shell=\"{script}\""
+        else:
+            value = f"shell={script}"
 
         param_index = 1
-        for param in self._params:
+        for param in params:
             value += f" param{param_index}={param}"
-        value += f" terminal={str(self._terminal).lower()}"
+        value += f" terminal={str(terminal).lower()}"
 
-        return value
+        self._shell = value
+
+        return self
+
+    def alternate(self, alt):
+        if (alt):
+            self._alt = "alternate=true"
+        else:
+            self._alt = None
+
+        return self
+        
+    def link(self, link):
+        if len(link) > 0:
+            self._link = f"href={link}"
+        else:
+            self._link = None
+
+        return self
 
 class XbarPrinter:
 
-    _default_config = XbarItem("Configure noti", [XbarParamShell("vi", ["$HOME/.noticonfig.json"], True)]).val()
+    _default_config = str(XbarItem("Configure noti").shell("vi", ["$HOME/.noticonfig.json"], True))
     
     def __init__(self, conf):
         self._conf = conf
@@ -481,11 +518,11 @@ class XbarPrinter:
                 print(config)
 
     def add_error(self, title):
-        self._configs.insert(0, f"{title} | color=red")
+        self._configs.insert(0, XbarItem(title).color("red"))
     
     @classmethod
     def fatal(cls, message, help_link=None):
-        print('Noti Error | color=red')
+        print(XbarItem("Noti Error").color("red"))
         print('---')
 
         if help_link is not None:
@@ -541,7 +578,7 @@ class XbarPrinter:
         else:
             self._items.append(title)
         
-        self._items.append(f"{mr.title} | color=white alternate=true")
+        self._items.append(XbarItem(mr.title).color("white").alternate(True))
 
     def generate_title(self, mrs):
         statistics = {
