@@ -428,6 +428,9 @@ class XbarItem:
     def __str__(self):
         value = self._title
 
+        if self._link:
+            self._params.append(self._link)
+
         if self._shell:
             self._params.append(self._shell)
 
@@ -437,9 +440,6 @@ class XbarItem:
         if self._alt:
             self._params.append(self._alt)
         
-        if self._link:
-            self._params.append(self._link)
-
         if len(self._params) > 0:
             value += " | " 
             value += " ".join(self._params)
@@ -502,7 +502,7 @@ class XbarPrinter:
         self._title = title    
     
     def add_repo(self, item):
-        self._items.append(item)
+        self._items.append(XbarItem(item))
 
     def print(self):
         print(self._title)
@@ -525,9 +525,12 @@ class XbarPrinter:
         print(XbarItem("Noti Error").color("red"))
         print('---')
 
+        messageItem = XbarItem(message)
+
         if help_link is not None:
-            message += ' | color=red href=' + help_link
-        print(message)
+            messageItem.link(help_link)
+            messageItem.color("red")
+        print(messageItem)
 
         print('---')
         print(cls._default_config)
@@ -541,21 +544,20 @@ class XbarPrinter:
             'running': 'blue'
         }
 
-        title = ''
-        if mr.approved:
-            title += ' ' + self._conf.get('approved')
-        title += f" | href={mr.url}"
+        titleItem = XbarItem().link(mr.url)
 
         sub_text = ''
 
         # pipeline field will be empty if it is cancelled
-        color = ''
         if mr.ci_status in pipeline_color_map:
-            title += f" color={pipeline_color_map[mr.ci_status]}"
+            titleItem.color(pipeline_color_map[mr.ci_status])
             if mr.ci_status == 'failed':
                 sub_text += '--Failed jobs\n'
                 for job in mr.failed_pipeline_jobs:
-                    sub_text += f"--{job.name} | color=red href={job.url}\n"
+                    subItem = XbarItem(job.name).color("red").link(job.url)
+                    sub_text += f"--{subItem}\n"
+
+        title = mr.branch
 
         if len(mr.reviews) > 0:
             sub_text += '-----\n'
@@ -566,17 +568,21 @@ class XbarPrinter:
                 firstname = review.author.split(' ')[0]
                 short = review.body.replace('-', '').replace('\n', '').replace('\r', '')
                 short = short[:32]
-                shorts.append(f"--{firstname}: {short} | href={review.url}")
+                item = XbarItem(f"{firstname}: {short}").link(review.url)
+                shorts.append(f"--{item}")
             
             sub_text += '\n'.join(shorts)
-            title = f"{mr.branch} {self._conf.get('comments')}{len(mr.reviews)} {title}"
-        else:
-            title = f"{mr.branch} {title}"
-            
+            title += f" {self._conf.get('comments')}{len(mr.reviews)}"
+        
+        if mr.approved:
+            title += ' ' + self._conf.get('approved')
+        
+        titleItem.title(title)
+        
         if len(sub_text) > 0:
-            self._items.append(f"{title}\n{sub_text}")
+            self._items.append(f"{titleItem}\n{sub_text}")
         else:
-            self._items.append(title)
+            self._items.append(titleItem)
         
         self._items.append(XbarItem(mr.title).color("white").alternate(True))
 
