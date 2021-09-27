@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # <xbar.title>Noti</xbar.title>
-# <xbar.version>v0.5</xbar.version>
+# <xbar.version>v0.5.1</xbar.version>
 # <xbar.author>ye11ow</xbar.author>
 # <xbar.author.github>ye11ow</xbar.author.github>
 # <xbar.desc>Show the status of the merge requests</xbar.desc>
@@ -417,16 +417,20 @@ class GithubComment(Review):
 # Embedded version of Xbar SDK
 class XbarItem:
 
-    def __init__(self, title=""):
+    def __init__(self, title="", level=1):
         self._title = title
+        self._level = level
         self._params = []
         self._color = None
         self._shell = None
         self._alt = None
         self._link = None
+        self._children = []
     
     def __str__(self):
         value = self._title
+        if self._level > 2:
+            value = "--" + value
 
         if self._link:
             self._params.append(self._link)
@@ -444,10 +448,32 @@ class XbarItem:
             value += " | " 
             value += " ".join(self._params)
 
+        if len(self._children) > 0:
+            value += "\n"
+
+            for child in self._children:
+                if isinstance(child, list):
+                    if len(child) == 0:
+                        continue
+                    value += "-" * (self._level * 2 + 1)
+                    value += "\n"
+                    for c in child:
+                        value += str(c)
+                        value += "\n"
+                else:
+                    value += str(child)
+                    value += "\n"
+
+        if value[-1] == "\n":
+            value = value[0:-1]
+
         return value
 
-    def title(self, title):
-        self._title = title
+    def title(self, title=None):
+        if title != None:
+            self._title = title
+
+        return self._title
 
     def color(self, color):
         if len(color) > 0:
@@ -494,28 +520,21 @@ class XbarPrinter:
     
     def __init__(self, conf):
         self._conf = conf
-        self._title = ''
         self._items = []
+        self._root = XbarItem()
         self._configs = [self._default_config]
-
-    def title(self, title):
-        self._title = title    
     
-    def add_repo(self, item):
-        self._items.append(XbarItem(item))
+    def title(self, title=None):
+        return self._root.title(title)
+
+    def add_repo(self, name):
+        self._items.append(XbarItem(name))
 
     def print(self):
-        print(self._title)
+        self._root._children.append(self._items)
+        self._root._children.append(self._configs)
 
-        if len(self._items) > 0:
-            print('---')
-            for item in self._items:
-                print(item)
-            
-        if len(self._configs) > 0:
-            print('---')
-            for config in self._configs:
-                print(config)
+        print(self._root)
 
     def add_error(self, title):
         self._configs.insert(0, XbarItem(title).color("red"))
@@ -544,46 +563,38 @@ class XbarPrinter:
             'running': 'blue'
         }
 
-        titleItem = XbarItem().link(mr.url)
-
-        sub_text = ''
+        mr_item = XbarItem(level=2).link(mr.url)
 
         # pipeline field will be empty if it is cancelled
         if mr.ci_status in pipeline_color_map:
-            titleItem.color(pipeline_color_map[mr.ci_status])
+            mr_item.color(pipeline_color_map[mr.ci_status])
             if mr.ci_status == 'failed':
-                sub_text += '--Failed jobs\n'
+                sub_items = [XbarItem("Failed jobs", level=3)]
                 for job in mr.failed_pipeline_jobs:
-                    subItem = XbarItem(job.name).color("red").link(job.url)
-                    sub_text += f"--{subItem}\n"
+                    sub_items.append(XbarItem(job.name, level=3).color("red").link(job.url))
+                
+                mr_item._children.append(sub_items)
 
         title = mr.branch
 
         if len(mr.reviews) > 0:
-            sub_text += '-----\n'
-            sub_text += f"--Discussions ({self.time_diff(mr.reviews[0].created_at)})\n"
+            sub_items = [XbarItem(f"Discussions ({self.time_diff(mr.reviews[0].created_at)})", level=3)]
 
-            shorts = []
             for review in mr.reviews:
                 firstname = review.author.split(' ')[0]
                 short = review.body.replace('-', '').replace('\n', '').replace('\r', '')
                 short = short[:32]
-                item = XbarItem(f"{firstname}: {short}").link(review.url)
-                shorts.append(f"--{item}")
+                sub_items.append(XbarItem(f"{firstname}: {short}", level=3).link(review.url))
             
-            sub_text += '\n'.join(shorts)
+            mr_item._children.append(sub_items)
             title += f" {self._conf.get('comments')}{len(mr.reviews)}"
         
         if mr.approved:
             title += ' ' + self._conf.get('approved')
         
-        titleItem.title(title)
+        mr_item.title(title)
         
-        if len(sub_text) > 0:
-            self._items.append(f"{titleItem}\n{sub_text}")
-        else:
-            self._items.append(titleItem)
-        
+        self._items.append(mr_item)
         self._items.append(XbarItem(mr.title).color("white").alternate(True))
 
     def generate_title(self, mrs):
@@ -625,7 +636,6 @@ class XbarPrinter:
         seconds = diff.seconds
         days = diff.days
 
-        days_text = ''
         if days > 365:
             return 'long long ago'
         elif days > 7:

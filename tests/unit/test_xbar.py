@@ -119,7 +119,7 @@ class TestXbarPrinter:
     def test_generate_title_no_mr(self, bp):
         bp.generate_title({})
 
-        assert bp._title == '😃'
+        assert bp.title() == '😃'
 
     def test_generate_title(self, bp):
         mrs = {}    
@@ -132,7 +132,7 @@ class TestXbarPrinter:
 
         bp.generate_title(mrs)
 
-        assert bp._title == '👍2🙃1🏃1💬10'
+        assert bp.title() == '👍2🙃1🏃1💬10'
 
     def test_generate_mr(self, bp):
         mr = create_mr_details(True, 'myurl', 'success', 'mybranch', 'mytitle', [], [])
@@ -156,5 +156,5 @@ class TestXbarPrinter:
         bp.generate_mr(mr)
 
         # TODO: improve the assertion here to cover reviews output
-        assert str(bp._items[0]).startswith('mybranch 💬1 | href=myurl color=red\n--Failed jobs\n--name1 | href=url1 color=red')
+        assert str(bp._items[0]).startswith('mybranch 💬1 | href=myurl color=red\n-----\n--Failed jobs\n--name1 | href=url1 color=red')
         assert str(bp._items[1]) == 'mytitle | color=white alternate=true'
