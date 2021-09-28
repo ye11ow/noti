@@ -428,9 +428,8 @@ class XbarItem:
         self._children = []
     
     def __str__(self):
-        value = self._title
-        if self._level > 2:
-            value = "--" + value
+        # It's OK to have `_level < 2` here.
+        value = "--" * (self._level - 2) + self._title
 
         if self._link:
             self._params.append(self._link)
@@ -451,15 +450,14 @@ class XbarItem:
         if len(self._children) > 0:
             value += "\n"
 
+            # This is the title item
+            if (self._level == 1):
+                value += "---\n"
+
             for child in self._children:
-                if isinstance(child, list):
-                    if len(child) == 0:
-                        continue
+                if isinstance(child, XbarSeperator):
                     value += "-" * (self._level * 2 + 1)
                     value += "\n"
-                    for c in child:
-                        value += str(c)
-                        value += "\n"
                 else:
                     value += str(child)
                     value += "\n"
@@ -506,25 +504,39 @@ class XbarItem:
         self._link = f"href={link}"
         return self
 
-class XbarPrinter:
+    def append_child(self, child):
+        if isinstance(child, XbarItem) or isinstance(child, XbarSeperator):
+            self._children.append(child)
+        else:
+            raise Exception(f"Wrong type of child: {type(child)}")
 
-    _default_config = str(XbarItem("Configure noti").shell("vi", ["$HOME/.noticonfig.json"], True))
+class XbarSeperator():
+
+    def __init__(self):
+        return
+
+class XbarPrinter:
     
     def __init__(self, conf):
         self._conf = conf
-        self._items = []
         self._root = XbarItem()
-        self._configs = [self._default_config]
+        self._configs = [XbarItem("Configure noti").shell("vi", ["$HOME/.noticonfig.json"], True)]
     
     def title(self, title=None):
         return self._root.title(title)
 
     def add_repo(self, name):
-        self._items.append(XbarItem(name))
+        self.append_child(XbarItem(name))
+    
+    def append_child(self, child):
+        self._root.append_child(child)
 
     def print(self):
-        self._root._children.append(self._items)
-        self._root._children.append(self._configs)
+        if len(self._root._children) > 0:
+            self.append_child(XbarSeperator())
+        
+        for config in self._configs:
+            self.append_child(config)
 
         print(self._root)
 
@@ -544,7 +556,7 @@ class XbarPrinter:
         print(messageItem)
 
         print('---')
-        print(cls._default_config)
+        print(XbarItem("Configure noti").shell("vi", ["$HOME/.noticonfig.json"], True))
 
         exit(1)
 
@@ -558,27 +570,28 @@ class XbarPrinter:
         mr_item = XbarItem(level=2).link(mr.url)
 
         # pipeline field will be empty if it is cancelled
+        failed_jobs = False
         if mr.ci_status in pipeline_color_map:
             mr_item.color(pipeline_color_map[mr.ci_status])
             if mr.ci_status == 'failed':
-                sub_items = [XbarItem("Failed jobs", level=3)]
+                failed_jobs = True
+                mr_item.append_child(XbarItem("Failed jobs", level=3))
                 for job in mr.failed_pipeline_jobs:
-                    sub_items.append(XbarItem(job.name, level=3).color("red").link(job.url))
+                    mr_item.append_child(XbarItem(job.name, level=3).color("red").link(job.url))
                 
-                mr_item._children.append(sub_items)
-
         title = mr.branch
 
         if len(mr.reviews) > 0:
-            sub_items = [XbarItem(f"Discussions ({self.time_diff(mr.reviews[0].created_at)})", level=3)]
+            if failed_jobs:
+                mr_item.append_child(XbarSeperator())
+            mr_item.append_child(XbarItem(f"Discussions ({self.time_diff(mr.reviews[0].created_at)})", level=3))
 
             for review in mr.reviews:
                 firstname = review.author.split(' ')[0]
                 short = review.body.replace('-', '').replace('\n', '').replace('\r', '')
                 short = short[:32]
-                sub_items.append(XbarItem(f"{firstname}: {short}", level=3).link(review.url))
+                mr_item.append_child(XbarItem(f"{firstname}: {short}", level=3).link(review.url))
             
-            mr_item._children.append(sub_items)
             title += f" {self._conf.get('comments')}{len(mr.reviews)}"
         
         if mr.approved:
@@ -586,8 +599,8 @@ class XbarPrinter:
         
         mr_item.title(title)
         
-        self._items.append(mr_item)
-        self._items.append(XbarItem(mr.title).color("white").alternate(True))
+        self.append_child(mr_item)
+        self.append_child(XbarItem(mr.title).color("white").alternate(True))
 
     def generate_title(self, mrs):
         statistics = {

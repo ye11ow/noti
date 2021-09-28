@@ -1,4 +1,5 @@
 from noti import XbarItem
+from noti import XbarSeperator
 
 class TestXbarSDK:
 
@@ -17,6 +18,16 @@ class TestXbarSDK:
     def test_single_child(self):
         item = XbarItem("test")
 
-        item._children.append(XbarItem("child"))
+        item.append_child(XbarItem("child"))
 
-        assert str(item) == "test\nchild"
+        assert str(item) == "test\n---\nchild"
+
+    def test_separator(self):
+        item = XbarItem("test")
+            
+        item.append_child(XbarItem("child1"))
+        item.append_child(XbarSeperator())
+        item.append_child(XbarItem("child2"))
+
+        assert str(item) == "test\n---\nchild1\n---\nchild2"
+

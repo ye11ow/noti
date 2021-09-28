@@ -8,7 +8,7 @@ import pytest
 from dateutil.tz import tzlocal
 from dateutil import parser
 
-from noti import XbarPrinter
+from noti import XbarItem, XbarPrinter
 from noti import NotiConfig
 
 def proxy_print(bp):
@@ -97,8 +97,8 @@ class TestXbarPrinter:
         
     def test_print_with_items(self, bp):
         bp.title('MYTITLE')
-        bp._items.append('123')
-        bp._items.append('456')
+        bp.append_child(XbarItem('123'))
+        bp.append_child(XbarItem('456'))
 
         out = proxy_print(bp)
 
@@ -139,8 +139,8 @@ class TestXbarPrinter:
 
         bp.generate_mr(mr)
 
-        assert str(bp._items[0]) == 'mybranch 👍 | href=myurl color=green'
-        assert str(bp._items[1]) == 'mytitle | color=white alternate=true'
+        assert str(bp._root._children[0]) == 'mybranch 👍 | href=myurl color=green'
+        assert str(bp._root._children[1]) == 'mytitle | color=white alternate=true'
 
     def test_generate_mr_with_reviews_and_failed_job(self, bp):
         reviews = [
@@ -156,5 +156,5 @@ class TestXbarPrinter:
         bp.generate_mr(mr)
 
         # TODO: improve the assertion here to cover reviews output
-        assert str(bp._items[0]).startswith('mybranch 💬1 | href=myurl color=red\n-----\n--Failed jobs\n--name1 | href=url1 color=red')
-        assert str(bp._items[1]) == 'mytitle | color=white alternate=true'
+        assert str(bp._root._children[0]).startswith('mybranch 💬1 | href=myurl color=red\n--Failed jobs\n--name1 | href=url1 color=red')
+        assert str(bp._root._children[1]) == 'mytitle | color=white alternate=true'
