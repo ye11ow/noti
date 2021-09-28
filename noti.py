@@ -476,11 +476,7 @@ class XbarItem:
         return self._title
 
     def color(self, color):
-        if len(color) > 0:
-            self._color = f"color={color}"
-        else:
-            self._color = None
-
+        self._color = f"color={color}"
         return self
     
     def shell(self, script, params=[], terminal=False):
@@ -503,15 +499,11 @@ class XbarItem:
             self._alt = "alternate=true"
         else:
             self._alt = None
-
+        
         return self
         
     def link(self, link):
-        if len(link) > 0:
-            self._link = f"href={link}"
-        else:
-            self._link = None
-
+        self._link = f"href={link}"
         return self
 
 class XbarPrinter:
