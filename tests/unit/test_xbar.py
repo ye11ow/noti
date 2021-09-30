@@ -93,7 +93,7 @@ class TestXbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\nConfigure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true\n'
+        assert out == 'MYTITLE\n---\nConfigure noti | param1=$HOME/.noticonfig.json shell=vi terminal=true\n'
         
     def test_print_with_items(self, bp):
         bp.title('MYTITLE')
@@ -102,7 +102,7 @@ class TestXbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true\n'
+        assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | param1=$HOME/.noticonfig.json shell=vi terminal=true\n'
         
     def test_fatal(self, bp):
         with pytest.raises(SystemExit):
@@ -114,7 +114,7 @@ class TestXbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | shell=vi param1=$HOME/.noticonfig.json terminal=true\n'
+        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | param1=$HOME/.noticonfig.json shell=vi terminal=true\n'
 
     def test_generate_title_no_mr(self, bp):
         bp.generate_title({})
@@ -139,8 +139,8 @@ class TestXbarPrinter:
 
         bp.generate_mr(mr)
 
-        assert str(bp._root._children[0]) == 'mybranch 👍 | href=myurl color=green'
-        assert str(bp._root._children[1]) == 'mytitle | color=white alternate=true'
+        assert str(bp._root._children[0]) == 'mybranch 👍 | color=green href=myurl'
+        assert str(bp._root._children[1]) == 'mytitle | alternate=true color=white'
 
     def test_generate_mr_with_reviews_and_failed_job(self, bp):
         reviews = [
@@ -156,5 +156,5 @@ class TestXbarPrinter:
         bp.generate_mr(mr)
 
         # TODO: improve the assertion here to cover reviews output
-        assert str(bp._root._children[0]).startswith('mybranch 💬1 | href=myurl color=red\n--Failed jobs\n--name1 | href=url1 color=red')
-        assert str(bp._root._children[1]) == 'mytitle | color=white alternate=true'
+        assert str(bp._root._children[0]).startswith('mybranch 💬1 | color=red href=myurl\n--Failed jobs\n--name1 | color=red href=url1')
+        assert str(bp._root._children[1]) == 'mytitle | alternate=true color=white'

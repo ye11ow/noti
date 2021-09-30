@@ -4,7 +4,7 @@ from requests.exceptions import ConnectionError
 import pytest
 
 from noti import main
-from noti import NotiError
+
 class TestNoti:
 
     @pytest.fixture
@@ -53,6 +53,5 @@ class TestNoti:
         main([vcs], conf, bp)
 
         bp.generate_title.assert_called_with(mrs) 
-        bp.add_repo.assert_called_with('_repo_')
         bp.generate_mr.assert_called_with('_mr_')
         bp.print.assert_called()

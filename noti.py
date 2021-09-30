@@ -249,7 +249,7 @@ class GitlabMR(MR):
             self._failed_pipeline_jobs = []
             if self._mr.attributes.get('pipeline'):
                 jobs = self._project.pipelines.get(self._mr.attributes.get('pipeline')['id'], lazy=True).jobs.list(scope='failed')
-                self._failed_pipeline_jobs = list(map(lambda x: PipelineJob(x), jobs))
+                self._failed_pipeline_jobs = [PipelineJob(x) for x in jobs]
 
         return self._failed_pipeline_jobs
 
@@ -276,7 +276,7 @@ class GitlabMR(MR):
         if not hasattr(self, '_reviews'):
             reviews = self._mr.notes.list()
             reviews = list(filter(lambda x: note_filter(x), reviews))
-            self._reviews = list(map(lambda x: GitlabReview(self, x), reviews))
+            self._reviews = [GitlabReview(self, x) for x in reviews]
 
         return self._reviews
 
@@ -375,7 +375,7 @@ class GithubPR(MR):
     def failed_pipeline_jobs(self):
         if not hasattr(self, '_failed_pipeline_jobs'):
             statuses = list(filter(lambda x: x.state == 'failure', self._status.statuses))
-            self._failed_pipeline_jobs = list(map(lambda x: TravisBuild(x), statuses))
+            self._failed_pipeline_jobs = [TravisBuild(x) for x in statuses]
 
         return self._failed_pipeline_jobs
 
@@ -420,32 +420,20 @@ class XbarItem:
     def __init__(self, title="", level=1):
         self._title = title
         self._level = level
-        self._params = []
-        self._color = None
-        self._shell = None
-        self._alt = None
-        self._link = None
         self._children = []
+        self._param = {}
     
     def __str__(self):
         # It's OK to have `_level < 2` here.
         value = "--" * (self._level - 2) + self._title
 
-        if self._link:
-            self._params.append(self._link)
-
-        if self._shell:
-            self._params.append(self._shell)
-
-        if self._color:
-            self._params.append(self._color) 
-        
-        if self._alt:
-            self._params.append(self._alt)
-        
-        if len(self._params) > 0:
+        params = []
+        for key in sorted(self._param.keys()):
+            params.append(f"{key}={self._param[key]}")
+                
+        if len(params) > 0:
             value += " | " 
-            value += " ".join(self._params)
+            value += " ".join(params)
 
         if len(self._children) > 0:
             value += "\n"
@@ -474,41 +462,38 @@ class XbarItem:
         return self._title
 
     def color(self, color):
-        self._color = f"color={color}"
+        self._param["color"] = color
         return self
     
     def shell(self, script, params=[], terminal=False):
         if script.find(" ") >= 0:
-            value = f"shell=\"{script}\""
+            self._param["shell"] = f"\"{script}\""
         else:
-            value = f"shell={script}"
+            self._param["shell"] = script
 
         param_index = 1
         for param in params:
-            value += f" param{param_index}={param}"
-        value += f" terminal={str(terminal).lower()}"
+            self._param[f"param{param_index}"] = param
 
-        self._shell = value
+        self._param["terminal"] = str(terminal).lower()
 
         return self
 
     def alternate(self, alt):
         if (alt):
-            self._alt = "alternate=true"
-        else:
-            self._alt = None
+            self._param["alternate"] = "true"
         
         return self
         
     def link(self, link):
-        self._link = f"href={link}"
+        self._param["href"] = link
         return self
 
     def append_child(self, child):
         if isinstance(child, XbarItem) or isinstance(child, XbarSeperator):
             self._children.append(child)
         else:
-            raise Exception(f"Wrong type of child: {type(child)}")
+            raise TypeError(f"Wrong type of child: {type(child)}")
 
 class XbarSeperator():
 
@@ -524,9 +509,6 @@ class XbarPrinter:
     
     def title(self, title=None):
         return self._root.title(title)
-
-    def add_repo(self, name):
-        self.append_child(XbarItem(name))
     
     def append_child(self, child):
         self._root.append_child(child)
@@ -694,7 +676,7 @@ def main(registry, conf, bp):
         if len(repo_mrs) == 0:
             continue
 
-        bp.add_repo(repo_name)
+        bp.append_child(XbarItem(repo_name))
         for mr in repo_mrs:
             bp.generate_mr(mr)
 
