@@ -15,7 +15,6 @@ class TestNoti:
     def vcs(self):
         vcs = MagicMock()
         vcs.name = '_name_'
-        vcs_instance = MagicMock()
         vcs.return_value.name = '_name_'
 
         return vcs

@@ -413,7 +413,6 @@ class GithubComment(Review):
             url=comment.html_url
         )
 
-
 # Embedded version of Xbar SDK
 class XbarItem:
 
@@ -489,6 +488,10 @@ class XbarItem:
         self._param["href"] = link
         return self
 
+    def length(self, length):
+        self._param["length"] = length
+        return self
+
     def append_child(self, child):
         if isinstance(child, XbarItem) or isinstance(child, XbarSeperator):
             self._children.append(child)
@@ -501,11 +504,13 @@ class XbarSeperator():
         return
 
 class XbarPrinter:
+
+    _default_config = XbarItem("Configure noti").shell("vi", ["$HOME/.noticonfig.json"], True)
     
     def __init__(self, conf):
         self._conf = conf
         self._root = XbarItem()
-        self._configs = [XbarItem("Configure noti").shell("vi", ["$HOME/.noticonfig.json"], True)]
+        self._configs = [self._default_config]
     
     def title(self, title=None):
         return self._root.title(title)
@@ -527,19 +532,19 @@ class XbarPrinter:
     
     @classmethod
     def fatal(cls, message, help_link=None):
-        print(XbarItem("Noti Error").color("red"))
-        print('---')
+        root = XbarItem("Noti Error").color("red")
 
         messageItem = XbarItem(message)
 
         if help_link is not None:
-            messageItem.link(help_link)
-            messageItem.color("red")
-        print(messageItem)
+            messageItem.link(help_link).color("red")
+        
+        root.append_child(messageItem)
+        root.append_child(XbarSeperator())
+        root.append_child(cls._default_config)
 
-        print('---')
-        print(XbarItem("Configure noti").shell("vi", ["$HOME/.noticonfig.json"], True))
-
+        print(root)
+        
         exit(1)
 
     def generate_mr(self, mr):
@@ -570,9 +575,8 @@ class XbarPrinter:
 
             for review in mr.reviews:
                 firstname = review.author.split(' ')[0]
-                short = review.body.replace('-', '').replace('\n', '').replace('\r', '')
-                short = short[:32]
-                mr_item.append_child(XbarItem(f"{firstname}: {short}", level=3).link(review.url))
+                escaped_text = review.body.replace('-', '').replace('\n', '').replace('\r', '')
+                mr_item.append_child(XbarItem(f"{firstname}: {escaped_text}", level=3).link(review.url).length(32))
             
             title += f" {self._conf.get('comments')}{len(mr.reviews)}"
         

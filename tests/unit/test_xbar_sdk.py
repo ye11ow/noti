@@ -37,3 +37,6 @@ class TestXbarSDK:
         with pytest.raises(TypeError):
             assert item.append_child(1234)
         
+    def test_escape(self, item):
+        item.length(89)
+        assert str(item).endswith("| length=89")
