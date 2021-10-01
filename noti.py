@@ -460,6 +460,26 @@ class XbarItem:
 
         return self._title
 
+    def key(self, key):
+        self._param["key"] = key
+        return self
+
+    def link(self, link):
+        self._param["href"] = link
+        return self
+    
+    def font(self, font=None, size=12, color=None):
+        if font:
+            self._param["font"] = font
+        
+        if size != 12:
+            self._param["size"] = size
+        
+        if color:
+            self._param["color"] = color
+        
+        return self
+
     def color(self, color):
         self._param["color"] = color
         return self
@@ -483,13 +503,27 @@ class XbarItem:
             self._param["alternate"] = "true"
         
         return self
-        
-    def link(self, link):
-        self._param["href"] = link
-        return self
 
     def length(self, length):
         self._param["length"] = length
+        return self
+
+    def refresh(self, refresh):
+        if refresh:
+            self._param["refresh"] = "true"
+        
+        return self
+    
+    def dropdown(self, dropdown):
+        if not dropdown:
+            self._param["dropdown"] = "false"
+        
+        return self
+    
+    def trim(self, trim):
+        if not trim:
+            self._param["trim"] = "false"
+        
         return self
 
     def append_child(self, child):

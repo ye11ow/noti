@@ -9,6 +9,20 @@ class TestXbarSDK:
     def item(self):
         return XbarItem("test")
 
+    
+    def test_key(self, item):
+        item.key("shift+k")
+
+        assert str(item) == "test | key=shift+k"
+
+    def test_font(self, item):
+        item.font()
+
+        assert str(item) == "test"
+
+        item.font("UbuntuMono-Bold", 14, "green")
+        assert str(item) == "test | color=green font=UbuntuMono-Bold size=14"
+
     def test_shell(self, item):
         item.shell("vi hello")
 
@@ -17,9 +31,33 @@ class TestXbarSDK:
     # `alternate=false` shouldn't be there since it is the default behaviour  
     def test_alternate(self, item):
         item.alternate(False)
-
         assert str(item) == "test"
     
+        item.alternate(True)
+        assert str(item) == "test | alternate=true"
+
+
+    def test_refresh(self, item):
+        item.refresh(False)
+        assert str(item) == "test"
+
+        item.refresh(True)
+        assert str(item) == "test | refresh=true"
+    
+    def test_dropdown(self, item):
+        item.dropdown(True)
+        assert str(item) == "test"
+
+        item.dropdown(False)
+        assert str(item) == "test | dropdown=false"
+
+    def test_trim(self, item):
+        item.trim(True)
+        assert str(item) == "test"
+
+        item.trim(False)
+        assert str(item) == "test | trim=false"
+
     # There shouldn't be any `-----`
     def test_single_child(self, item):
         item.append_child(XbarItem("child"))
@@ -62,3 +100,4 @@ class TestXbarSDK:
             "--child2_1\n"
             "-----\n"
             "--child2_2")
+        
