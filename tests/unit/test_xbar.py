@@ -8,7 +8,7 @@ import pytest
 from dateutil.tz import tzlocal
 from dateutil import parser
 
-from noti import XbarItem, XbarPrinter
+from noti import XbarItem, XbarPrinter, XbarSeperator
 from noti import NotiConfig
 
 def proxy_print(bp):
@@ -48,6 +48,7 @@ def create_review(author, body):
     review.author = author
     review.body = body
     review.created_at = parser.parse('2020-02-02T20:20:20Z')
+    review.url = "review_url"
 
     return review
 
@@ -93,7 +94,7 @@ class TestXbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\nConfigure noti | param1=$HOME/.noticonfig.json shell=vi terminal=true\n'
+        assert out == f"MYTITLE\n---\n{XbarPrinter._default_config}\n"
         
     def test_print_with_items(self, bp):
         bp.title('MYTITLE')
@@ -102,7 +103,7 @@ class TestXbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n123\n456\n---\nConfigure noti | param1=$HOME/.noticonfig.json shell=vi terminal=true\n'
+        assert out == f"MYTITLE\n---\n123\n456\n---\n{XbarPrinter._default_config}\n"
         
     def test_fatal(self, bp):
         with pytest.raises(SystemExit):
@@ -114,7 +115,7 @@ class TestXbarPrinter:
 
         out = proxy_print(bp)
 
-        assert out == 'MYTITLE\n---\n_error_ | color=red\nConfigure noti | param1=$HOME/.noticonfig.json shell=vi terminal=true\n'
+        assert out == f"MYTITLE\n---\n_error_ | color=red\n{XbarPrinter._default_config}\n"
 
     def test_generate_title_no_mr(self, bp):
         bp.generate_title({})
@@ -138,9 +139,11 @@ class TestXbarPrinter:
         mr = create_mr_details(True, 'myurl', 'success', 'mybranch', 'mytitle', [], [])
 
         bp.generate_mr(mr)
+        items = bp._children()
 
-        assert str(bp._root._children[0]) == 'mybranch 👍 | color=green href=myurl'
-        assert str(bp._root._children[1]) == 'mytitle | alternate=true color=white'
+        assert len(items) == 2
+        assert str(items[0]) == str(XbarItem("mybranch 👍").color("green").link("myurl"))
+        assert str(items[1]) == str(XbarItem("mytitle").color("white").alternate(True))
 
     def test_generate_mr_with_reviews_and_failed_job(self, bp):
         reviews = [
@@ -154,7 +157,18 @@ class TestXbarPrinter:
         mr = create_mr_details(False, 'myurl', 'failed', 'mybranch', 'mytitle', reviews, failed_jobs)
 
         bp.generate_mr(mr)
+        items = bp._children()
 
-        # TODO: improve the assertion here to cover reviews output
-        assert str(bp._root._children[0]).startswith('mybranch 💬1 | color=red href=myurl\n--Failed jobs\n--name1 | color=red href=url1')
-        assert str(bp._root._children[1]) == 'mytitle | alternate=true color=white'
+        assert len(items) == 2
+
+        sub_children = items[0]._children
+
+        assert len(sub_children) == 5
+        assert str(sub_children[0]) == str(XbarItem("--Failed jobs"))
+        assert str(sub_children[1]) == str(XbarItem("--name1").color("red").link("url1"))
+        assert isinstance(sub_children[2], XbarSeperator)
+        assert str(sub_children[3]) == str(XbarItem("--Discussions (long long ago)"))
+        assert str(sub_children[4]) == str(XbarItem("--author1: body1").link("review_url").length(32))
+
+        assert str(items[0]).startswith('mybranch 💬1')
+        assert str(items[1]) == str(XbarItem("mytitle").color("white").alternate(True))

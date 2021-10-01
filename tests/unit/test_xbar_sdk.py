@@ -40,3 +40,25 @@ class TestXbarSDK:
     def test_escape(self, item):
         item.length(89)
         assert str(item).endswith("| length=89")
+
+    def test_nested(self, item):
+        child1 = XbarItem("child1", level=2)
+        child1.append_child(XbarItem("child1_1", level=3))
+
+        child2 = XbarItem("child2", level=2)
+        child2.append_child(XbarItem("child2_1", level=3))
+        child2.append_child(XbarSeperator())
+        child2.append_child(XbarItem("child2_2", level=3))
+
+        item.append_child(child1)
+        item.append_child(child2)
+
+        assert str(item) == (
+            "test\n"
+            "---\n"
+            "child1\n"
+            "--child1_1\n"
+            "child2\n"
+            "--child2_1\n"
+            "-----\n"
+            "--child2_2")

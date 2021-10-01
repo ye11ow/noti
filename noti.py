@@ -529,6 +529,10 @@ class XbarPrinter:
 
     def add_error(self, title):
         self._configs.insert(0, XbarItem(title).color("red"))
+
+    # For unit test only
+    def _children(self):
+        return self._root._children
     
     @classmethod
     def fatal(cls, message, help_link=None):
